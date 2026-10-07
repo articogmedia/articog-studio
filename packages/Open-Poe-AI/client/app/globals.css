@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sora), system-ui, sans-serif;
+  --font-mono: var(--font-sora), system-ui, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sora), system-ui, sans-serif;
+}
+
+::placeholder {
+  color: #a6a6a6;
+}
+
+:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px #000000;
+}
