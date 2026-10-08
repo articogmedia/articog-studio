@@ -40,6 +40,8 @@
   "settingsModal": {
     "title": "Settings",
     "subtitle": "Manage your AI studio preferences and authentication.",
+    "accountEmail": "Signed in as",
+    "signOut": "Sign out",
     "activeApiKey": "Active API Key",
     "changeKey": "Change Key",
     "close": "Close"

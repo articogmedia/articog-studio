@@ -40,6 +40,8 @@
   "settingsModal": {
     "title": "设置",
     "subtitle": "管理您的 AI 工作室偏好设置和身份验证。",
+    "accountEmail": "当前账户",
+    "signOut": "退出登录",
     "activeApiKey": "当前 API 密钥",
     "changeKey": "更换密钥",
     "close": "关闭"

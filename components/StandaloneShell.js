@@ -10,7 +10,8 @@ const DesignAgentStudio = dynamic(() => import('studio').then(mod => mod.DesignA
   loading: () => <div className="h-full w-full bg-black flex items-center justify-center text-white/20">Loading Design Studio...</div>
 });
 import axios from 'axios';
-import ApiKeyModal from './ApiKeyModal';
+import ArticogAccessScreen from './ArticogAccessScreen';
+import { supabaseBrowser } from '@/lib/supabase/client';
 import { getCommonCopy, getLocaleConfig, localizeStudioPath } from '@/lib/locales';
 
 // Tab/category ids, icons, and English `label` fallbacks are stable
@@ -267,6 +268,7 @@ const getNavigationCategory = (tabId) => (
 );
 
 const STORAGE_KEY = 'muapi_key';
+const INTERNAL_SESSION_KEY = 'articog-session';
 const NOTIFICATIONS_STORAGE_KEY = 'open_gen_notifications_v1';
 const MAX_VISIBLE_NOTIFICATIONS = 3;
 
@@ -342,6 +344,8 @@ export default function StandaloneShell({ locale = 'en' }) {
   };
   
   const [apiKey, setApiKey] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [profileAuthenticated, setProfileAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState(getInitialTab());
 
   const [balance, setBalance] = useState(null);
@@ -575,14 +579,30 @@ export default function StandaloneShell({ locale = 'en' }) {
   }, [activeTab]);
 
   useEffect(() => {
-    setHasMounted(true);
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setApiKey(stored);
-      fetchBalance(stored);
-      // Sync cookie immediately on mount to establish identity for background requests
-      document.cookie = `muapi_key=${stored}; path=/; max-age=31536000; SameSite=Lax`;
+    let isCurrent = true;
+
+    async function loadAccessProfile() {
+      try {
+        const response = await fetch('/api/profile', { cache: 'no-store' });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || 'Could not verify studio access.');
+        if (!isCurrent) return;
+
+        setProfileAuthenticated(!!result.authenticated);
+        setProfile(result.profile || null);
+        if (result.authenticated && result.complete) {
+          setApiKey(INTERNAL_SESSION_KEY);
+          void fetchBalance(INTERNAL_SESSION_KEY);
+        }
+      } catch (error) {
+        console.error('Articog profile lookup failed:', error);
+      } finally {
+        if (isCurrent) setHasMounted(true);
+      }
     }
+
+    void loadAccessProfile();
+    return () => { isCurrent = false; };
   }, [fetchBalance]);
 
   const handleKeySave = useCallback((key) => {
@@ -597,6 +617,28 @@ export default function StandaloneShell({ locale = 'en' }) {
     setApiKey(null);
     setBalance(null);
     document.cookie = "muapi_key=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  }, []);
+
+  const handleAccessComplete = useCallback((savedProfile) => {
+    setProfile(savedProfile);
+    setProfileAuthenticated(true);
+    setApiKey(INTERNAL_SESSION_KEY);
+    void fetchBalance(INTERNAL_SESSION_KEY);
+  }, [fetchBalance]);
+
+  const handleSignOut = useCallback(async () => {
+    try {
+      const supabase = supabaseBrowser();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setProfile(null);
+      setProfileAuthenticated(false);
+      setApiKey(null);
+      setBalance(null);
+      setShowSettings(false);
+    } catch (error) {
+      console.error('Sign out failed:', error);
+    }
   }, []);
 
   // Inject API key into all outgoing Axios requests (prop-based approach)
@@ -676,7 +718,13 @@ export default function StandaloneShell({ locale = 'en' }) {
   );
 
   if (!apiKey) {
-    return <ApiKeyModal onSave={handleKeySave} locale={locale} />;
+    return (
+      <ArticogAccessScreen
+        authenticated={profileAuthenticated}
+        initialProfile={profile}
+        onComplete={handleAccessComplete}
+      />
+    );
   }
 
   return (
@@ -1184,20 +1232,20 @@ export default function StandaloneShell({ locale = 'en' }) {
             <div className="space-y-4 mb-8">
               <div className="bg-white/[0.03] border border-white/[0.08] rounded-lg p-4">
                 <label className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55 mb-2">
-                   {copy.settingsModal.activeApiKey}
+                   {copy.settingsModal.accountEmail}
                 </label>
                 <div className="text-[13px] font-mono text-[#e6e6e6]">
-                  {apiKey.slice(0, 8)}••••••••••••••••
+                  {profile?.email || 'Articog account'}
                 </div>
               </div>
             </div>
 
             <div className="flex gap-3">
               <button
-                onClick={handleKeyChange}
+                onClick={handleSignOut}
                 className="flex-1 h-10 rounded-full border border-white/10 bg-white/[0.03] text-white/70 hover:bg-white/[0.05] hover:text-white text-xs font-medium transition-colors"
               >
-                {copy.settingsModal.changeKey}
+                {copy.settingsModal.signOut}
               </button>
               <button
                 onClick={() => setShowSettings(false)}
