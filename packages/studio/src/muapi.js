@@ -370,6 +370,43 @@ export async function generateAudio(apiKey, params) {
 
 export function uploadFile(apiKey, file, onProgress) {
     return new Promise((resolve, reject) => {
+        if (process.env.NEXT_PUBLIC_USE_OWN_GATEWAY === 'true') {
+            const payload = JSON.stringify({ type: file.type, size: file.size });
+            fetch(`${BASE_URL}/api/v1/upload_url`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+                body: payload,
+            })
+                .then(async (response) => {
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        notifyAuthRequired(response.status, errText);
+                        throw new Error(`Upload URL request failed: ${response.status} - ${errText.slice(0, 100)}`);
+                    }
+                    const data = await response.json();
+                    const uploadUrl = data.uploadUrl || data.url;
+                    if (!uploadUrl) {
+                        throw new Error('No upload URL returned');
+                    }
+
+                    const uploadResponse = await fetch(uploadUrl, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+                        body: file,
+                    });
+
+                    if (!uploadResponse.ok) {
+                        throw new Error(`Direct upload failed: ${uploadResponse.status}`);
+                    }
+
+                    const publicUrl = data.publicUrl || data.url || uploadUrl;
+                    onProgress?.(100);
+                    resolve(publicUrl);
+                })
+                .catch((error) => reject(error));
+            return;
+        }
+
         const url = `${BASE_URL}/api/v1/upload_file`;
         const formData = new FormData();
         formData.append('file', file);

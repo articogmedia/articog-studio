@@ -32,6 +32,10 @@ export function middleware(request) {
     if (isMuApi) {
         // Exclude paths that have their own dedicated route handlers with custom logic
         const isHandledByRoute = url.pathname.startsWith('/api/v1/creative-agent') ||
+                                url.pathname.startsWith('/api/v1/account/balance') ||
+                                url.pathname.startsWith('/api/v1/predictions/') ||
+                                url.pathname.startsWith('/api/v1/upload_url') ||
+                                url.pathname.startsWith('/api/v1/upload_file') ||
                                 url.pathname.startsWith('/api/v1/get_upload_url') ||
                                 url.pathname.startsWith('/api/v1/upload-binary');
 

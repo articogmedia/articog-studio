@@ -36,3 +36,7 @@ out/
 .env
 .env.*
 !.env.example
+.env.local
+.data/
+.next
+.vercel
