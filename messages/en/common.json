@@ -24,7 +24,7 @@
     "agents-automation": "Agents & Automation"
   },
   "shell": {
-    "brand": "OpenGenerativeAI",
+    "brand": "Articog Studio",
     "studioFallback": "Studio",
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar",
@@ -34,7 +34,7 @@
     "settings": "Settings",
     "dropHere": "Drop your media here",
     "dropHereHint": "Images, videos, or audio files",
-    "vadooPromo": "Unrestricted AI Images & Videos → Auto-Publish as YouTube Shorts & TikToks, Earn ↗",
+    "vadooPromo": "AI images and video for your brand",
     "dismiss": "Dismiss"
   },
   "settingsModal": {

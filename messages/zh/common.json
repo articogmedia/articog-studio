@@ -24,7 +24,7 @@
     "agents-automation": "智能体与自动化"
   },
   "shell": {
-    "brand": "OpenGenerativeAI",
+    "brand": "Articog Studio",
     "studioFallback": "工作室",
     "expandSidebar": "展开侧边栏",
     "collapseSidebar": "收起侧边栏",
@@ -34,7 +34,7 @@
     "settings": "设置",
     "dropHere": "将媒体文件拖放到此处",
     "dropHereHint": "图片、视频或音频文件",
-    "vadooPromo": "无限制 AI 图像与视频 → 自动发布为 YouTube Shorts 和 TikTok，赚取收益 ↗",
+    "vadooPromo": "为您的品牌创作 AI 图像与视频",
     "dismiss": "关闭"
   },
   "settingsModal": {
