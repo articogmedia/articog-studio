@@ -8,7 +8,13 @@ export async function GET(request) {
   const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supaKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-  if (code && supaUrl && supaKey) {
+  if (!code || !supaUrl || !supaKey) {
+    const redirectUrl = new URL('/studio', request.url);
+    redirectUrl.searchParams.set('auth_error', 'callback_unavailable');
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  try {
     const store = await cookies();
     const supabase = createServerClient(supaUrl, supaKey, {
       cookies: {
@@ -16,7 +22,13 @@ export async function GET(request) {
         setAll: (list) => list.forEach(({ name, value, options }) => store.set(name, value, options)),
       },
     });
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) throw error;
+  } catch (error) {
+    console.error('[auth] callback exchange failed', error?.name || 'unknown');
+    const redirectUrl = new URL('/studio', request.url);
+    redirectUrl.searchParams.set('auth_error', 'callback_failed');
+    return NextResponse.redirect(redirectUrl);
   }
 
   return NextResponse.redirect(new URL('/studio', request.url));

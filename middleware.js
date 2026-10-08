@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 import { getLocaleFromPathname } from './lib/locales';
 
 function addSecurityHeaders(response) {
@@ -21,8 +22,28 @@ function addSecurityHeaders(response) {
     return response;
 }
 
-export function middleware(request) {
+export async function middleware(request) {
     const url = request.nextUrl;
+    let response = NextResponse.next({ request });
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    if (supabaseUrl && supabaseKey && !url.pathname.startsWith('/api/')) {
+        const supabase = createServerClient(supabaseUrl, supabaseKey, {
+            cookies: {
+                getAll: () => request.cookies.getAll(),
+                setAll: (list) => {
+                    list.forEach(({ name, value }) => request.cookies.set(name, value));
+                    response = NextResponse.next({ request });
+                    list.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+                },
+            },
+        });
+        const { error } = await supabase.auth.getUser();
+        if (error && error.name !== 'AuthSessionMissingError') {
+            console.error('[auth] session refresh failed', error.name || 'unknown', error.status || '');
+        }
+    }
 
     // Catch requests to /api/workflow, /api/app, and /api/v1
     const isMuApi = url.pathname.startsWith('/api/workflow') ||
@@ -49,7 +70,6 @@ export function middleware(request) {
     // Plain response header carrying the locale derived from the URL path
     // (same "set in middleware, read via headers() in the root layout"
     // trick the main muapi client uses — see docs/localization.md).
-    const response = NextResponse.next();
     response.headers.set('x-locale', getLocaleFromPathname(url.pathname));
     return addSecurityHeaders(response);
 }

@@ -581,30 +581,108 @@ export default function StandaloneShell({ locale = 'en' }) {
 
   useEffect(() => {
     let isCurrent = true;
+    let initialSessionHandled = false;
+    let sessionRevision = 0;
 
-    async function loadAccessProfile() {
-      try {
-        const response = await fetch('/api/profile', { cache: 'no-store' });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.detail || 'Could not verify studio access.');
-        if (!isCurrent) return;
+    const applySession = async (session) => {
+      if (!isCurrent) return;
+      const revision = ++sessionRevision;
+      const callbackError = new URLSearchParams(window.location.search).get('auth_error');
 
-        setProfileAuthenticated(!!result.authenticated);
-        setProfile(result.profile || null);
-        if (result.authenticated && result.complete) {
-          setApiKey(INTERNAL_SESSION_KEY);
-          void fetchBalance(INTERNAL_SESSION_KEY);
+      const user = session?.user || null;
+      const savedProfile = user?.user_metadata?.articog_profile;
+      let nextProfile = user ? {
+        fullName: typeof savedProfile?.fullName === 'string' ? savedProfile.fullName : '',
+        email: typeof savedProfile?.email === 'string' ? savedProfile.email : (user.email || ''),
+        company: typeof savedProfile?.company === 'string' ? savedProfile.company : '',
+      } : null;
+
+      setProfileAuthenticated(!!user);
+      setProfile(nextProfile);
+      if (user) {
+        setAccessError('');
+      } else if (callbackError) {
+        setAccessError(callbackError === 'callback_failed'
+          ? 'The sign-in link could not be verified. Request a new link and open it in this browser.'
+          : 'The sign-in callback could not be completed. Check the Supabase configuration and try again.');
+      }
+
+      if (user) {
+        try {
+          const response = await fetch('/api/profile', { cache: 'no-store' });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.detail || 'Could not load your Articog profile.');
+          if (revision !== sessionRevision || !isCurrent) return;
+          if (result.authenticated && result.profile) nextProfile = result.profile;
+        } catch (error) {
+          if (!nextProfile?.fullName.trim() || !nextProfile?.email.trim()) {
+            if (revision === sessionRevision && isCurrent) setAccessError(error.message || 'Could not load your Articog profile.');
+          }
         }
+      }
+
+      if (!isCurrent || revision !== sessionRevision) return;
+
+      setProfile(nextProfile);
+      const hasCompleteProfile = !!nextProfile?.fullName.trim() && !!nextProfile?.email.trim();
+      if (hasCompleteProfile) {
+        setApiKey(INTERNAL_SESSION_KEY);
+        void fetchBalance(INTERNAL_SESSION_KEY);
+      } else {
+        setApiKey(null);
+        setBalance(null);
+      }
+
+      setHasMounted(true);
+    };
+
+    async function restoreAuthSession() {
+      try {
+        const supabase = supabaseBrowser();
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'INITIAL_SESSION') {
+            if (initialSessionHandled) return;
+            initialSessionHandled = true;
+            window.setTimeout(() => { void applySession(session); }, 0);
+            return;
+          }
+
+          window.setTimeout(() => { void applySession(session); }, 0);
+        });
+        unsubscribe = () => subscription.unsubscribe();
+
+        const { data, error } = await supabase.auth.getSession();
+        if (error && error.name !== 'AuthSessionMissingError') throw error;
+        if (!initialSessionHandled) {
+          initialSessionHandled = true;
+          await applySession(data?.session || null);
+        }
+
+        return unsubscribe;
       } catch (error) {
         console.error('Articog profile lookup failed:', error);
-        if (isCurrent) setAccessError(error.message || 'Could not verify your Articog account.');
-      } finally {
-        if (isCurrent) setHasMounted(true);
+        if (!isCurrent) return;
+
+        if (error?.name === 'AuthSessionMissingError') {
+          applySession(null);
+        } else {
+          setAccessError(error.message || 'Could not verify your Articog account.');
+          setHasMounted(true);
+        }
       }
     }
 
-    void loadAccessProfile();
-    return () => { isCurrent = false; };
+    let unsubscribe = () => {};
+    void restoreAuthSession().then((cleanup) => {
+      if (typeof cleanup === 'function') {
+        if (isCurrent) unsubscribe = cleanup;
+        else cleanup();
+      }
+    });
+    return () => {
+      isCurrent = false;
+      unsubscribe();
+    };
   }, [fetchBalance]);
 
   const handleKeySave = useCallback((key) => {
