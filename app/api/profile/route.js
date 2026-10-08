@@ -18,8 +18,22 @@ function isComplete(profile) {
   return profile.fullName.length > 0 && profile.fullName.length <= 120 && EMAIL_PATTERN.test(profile.email);
 }
 
+function authErrorResponse(error) {
+  const missingConfiguration = error?.code === 'SUPABASE_SERVER_CONFIG_MISSING';
+  return NextResponse.json({
+    detail: error?.message || 'Could not verify your Articog account.',
+    code: error?.code || 'SUPABASE_AUTH_ERROR',
+  }, { status: missingConfiguration ? 503 : 502 });
+}
+
 export async function GET() {
-  const user = await getUser();
+  let user;
+  try {
+    user = await getUser();
+  } catch (error) {
+    return authErrorResponse(error);
+  }
+
   if (!user) {
     return NextResponse.json({ authenticated: false, complete: false, profile: null }, { headers: { 'Cache-Control': 'no-store' } });
   }
@@ -33,7 +47,13 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const user = await getUser();
+  let user;
+  try {
+    user = await getUser();
+  } catch (error) {
+    return authErrorResponse(error);
+  }
+
   if (!user) {
     return NextResponse.json({ detail: 'Sign in to continue.' }, { status: 401 });
   }

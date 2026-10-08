@@ -346,6 +346,7 @@ export default function StandaloneShell({ locale = 'en' }) {
   const [apiKey, setApiKey] = useState(null);
   const [profile, setProfile] = useState(null);
   const [profileAuthenticated, setProfileAuthenticated] = useState(false);
+  const [accessError, setAccessError] = useState('');
   const [activeTab, setActiveTab] = useState(getInitialTab());
 
   const [balance, setBalance] = useState(null);
@@ -596,6 +597,7 @@ export default function StandaloneShell({ locale = 'en' }) {
         }
       } catch (error) {
         console.error('Articog profile lookup failed:', error);
+        if (isCurrent) setAccessError(error.message || 'Could not verify your Articog account.');
       } finally {
         if (isCurrent) setHasMounted(true);
       }
@@ -722,6 +724,7 @@ export default function StandaloneShell({ locale = 'en' }) {
       <ArticogAccessScreen
         authenticated={profileAuthenticated}
         initialProfile={profile}
+        accessError={accessError}
         onComplete={handleAccessComplete}
       />
     );
