@@ -35,7 +35,7 @@ export function middleware(request) {
                                 url.pathname.startsWith('/api/v1/get_upload_url') ||
                                 url.pathname.startsWith('/api/v1/upload-binary');
 
-        if (url.pathname.startsWith('/api/v1') && !isHandledByRoute) {
+        if (process.env.NEXT_PUBLIC_USE_OWN_GATEWAY !== 'true' && url.pathname.startsWith('/api/v1') && !isHandledByRoute) {
             const targetUrl = new URL(url.pathname + url.search, 'https://api.muapi.ai');
             const rewriteResponse = NextResponse.rewrite(targetUrl);
             return addSecurityHeaders(rewriteResponse);
