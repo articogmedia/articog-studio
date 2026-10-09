@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
+import { getForwardableApiKey, stripInternalSessionCredential } from '@/lib/muapi/auth';
 
 const MUAPI_BASE = 'https://api.muapi.ai';
 
 function getApiKey(request) {
     const authHeader = request.headers.get('Authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
-        return authHeader.substring(7);
+        return getForwardableApiKey(authHeader.substring(7));
     }
     const headerKey = request.headers.get('x-api-key');
-    if (headerKey) return headerKey;
+    if (headerKey) return getForwardableApiKey(headerKey);
     // Cookie-based auth removed for security: no HttpOnly flag exposes key to XSS (CWE-522)
     return null;
 }
@@ -20,7 +21,7 @@ function cleanHeaders(request) {
     headers.delete('cookie');
     headers.delete('Authorization');
     headers.delete('x-api-key');
-    return headers;
+    return stripInternalSessionCredential(headers);
 }
 
 export async function GET(request, { params }) {

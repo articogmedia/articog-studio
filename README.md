@@ -505,6 +505,10 @@ npm run build
 npm run start
 ```
 
+### Vercel Deployment
+
+For Supabase-authenticated hosted users, set `NEXT_PUBLIC_USE_OWN_GATEWAY=true` in the Vercel project's Environment Variables for every deployment target that should use the first-party gateway. This public variable is embedded in the browser bundle at build time and is also read by the server routes, so set it before building and redeploy after changing it. Configure the Supabase URL, publishable key, and server secret in the appropriate Vercel environments; do not expose the server secret as a `NEXT_PUBLIC_` variable.
+
 ### Desktop App Build
 
 Build native desktop apps with Electron:

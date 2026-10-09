@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getForwardableApiKey, stripInternalSessionCredential } from '@/lib/muapi/auth';
 
 const MUAPI_BASE = 'https://api.muapi.ai';
 
@@ -6,10 +7,10 @@ function getApiKey(request) {
     const authHeader = request.headers.get('Authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7).trim();
-        if (token) return token;
+        if (token) return getForwardableApiKey(token);
     }
     const headerKey = request.headers.get('x-api-key');
-    return (headerKey && headerKey.trim()) || null;
+    return getForwardableApiKey(headerKey);
 }
 
 function cleanHeaders(request) {
@@ -18,7 +19,7 @@ function cleanHeaders(request) {
     headers.delete('connection');
     headers.delete('cookie'); // CRITICAL: Stop forwarding browser cookies to MuAPI to avoid auth conflicts
     headers.delete('authorization');
-    return headers;
+    return stripInternalSessionCredential(headers);
 }
 
 export async function GET(request, { params }) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { getLocaleFromPathname } from './lib/locales';
+import { stripInternalSessionCredential } from './lib/muapi/auth';
 
 function addSecurityHeaders(response) {
     // Prevent MIME type sniffing (CWE-693)
@@ -62,7 +63,8 @@ export async function middleware(request) {
 
         if (process.env.NEXT_PUBLIC_USE_OWN_GATEWAY !== 'true' && url.pathname.startsWith('/api/v1') && !isHandledByRoute) {
             const targetUrl = new URL(url.pathname + url.search, 'https://api.muapi.ai');
-            const rewriteResponse = NextResponse.rewrite(targetUrl);
+            const requestHeaders = stripInternalSessionCredential(new Headers(request.headers));
+            const rewriteResponse = NextResponse.rewrite(targetUrl, { request: { headers: requestHeaders } });
             return addSecurityHeaders(rewriteResponse);
         }
     }

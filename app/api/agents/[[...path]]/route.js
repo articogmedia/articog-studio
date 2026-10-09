@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getForwardableApiKey, stripInternalSessionCredential } from '@/lib/muapi/auth';
 
 const MUAPI_BASE = 'https://api.muapi.ai';
 
@@ -6,7 +7,7 @@ function getApiKey(request) {
     // Only accept x-api-key header. Cookie-based auth is removed for security:
     // cookies without HttpOnly flag can be stolen by XSS (CWE-522).
     const headerKey = request.headers.get('x-api-key');
-    return headerKey || null;
+    return getForwardableApiKey(headerKey);
 }
 
 function cleanHeaders(request) {
@@ -14,7 +15,7 @@ function cleanHeaders(request) {
     headers.delete('host');
     headers.delete('connection');
     headers.delete('cookie'); // CRITICAL: Stop forwarding browser cookies to MuAPI
-    return headers;
+    return stripInternalSessionCredential(headers);
 }
 
 // Build the target URL without a trailing slash when path is empty.

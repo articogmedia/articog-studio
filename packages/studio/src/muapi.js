@@ -20,6 +20,10 @@ const BASE_URL = (process.env.NEXT_PUBLIC_USE_OWN_GATEWAY === 'true')
         : 'https://api.muapi.ai');
 
 const BYTEPLUS_SEEDANCE_25_ENDPOINT = /^seedance-2\.5-(?:(?:intl|spicy)-)?(?:text-to-video|image-to-video|first-last-frame|omni-reference)(?:-(?:480p|1080p))?$/;
+export const INTERNAL_SESSION_KEY = 'articog-session';
+
+const isBrowserHttp = () => typeof window !== 'undefined' && window.location?.protocol?.startsWith('http');
+const isInternalSession = (apiKey) => apiKey === INTERNAL_SESSION_KEY;
 
 export function getApiBaseUrl(endpoint) {
     const isBrowserHttp = typeof window !== 'undefined' && window.location?.protocol?.startsWith('http');
@@ -472,12 +476,13 @@ export function uploadFile(apiKey, file, onProgress) {
 }
 
 export async function getUserBalance(apiKey) {
-    const response = await fetch(`${BASE_URL}/api/v1/account/balance`, {
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey
-        }
-    });
+    const internalSession = isInternalSession(apiKey);
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey && !internalSession) headers['x-api-key'] = apiKey;
+    const url = internalSession
+        ? '/api/v1/account/balance'
+        : `${BASE_URL}/api/v1/account/balance`;
+    const response = await fetch(url, { credentials: 'same-origin', headers });
     if (!response.ok) {
         const errText = await response.text();
         notifyAuthRequired(response.status, errText);
@@ -973,12 +978,16 @@ export async function calculateDynamicCost(apiKey, taskName, payload) {
 }
 
 export async function registerAppInterest(apiKey, appName) {
-    const response = await fetch(`${BASE_URL}/app/interest`, {
+    const internalSession = isInternalSession(apiKey);
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey && !internalSession) headers['x-api-key'] = apiKey;
+    const url = isBrowserHttp() || internalSession
+        ? '/api/app/interests'
+        : `${BASE_URL}/app/interest`;
+    const response = await fetch(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey
-        },
+        credentials: 'same-origin',
+        headers,
         body: JSON.stringify({ app_name: appName })
     });
     if (!response.ok) {
@@ -989,11 +998,15 @@ export async function registerAppInterest(apiKey, appName) {
 }
 
 export async function getAppInterests(apiKey) {
-    const response = await fetch(`${BASE_URL}/app/interests`, {
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey
-        }
+    const internalSession = isInternalSession(apiKey);
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey && !internalSession) headers['x-api-key'] = apiKey;
+    const url = isBrowserHttp() || internalSession
+        ? '/api/app/interests'
+        : `${BASE_URL}/app/interests`;
+    const response = await fetch(url, {
+        credentials: 'same-origin',
+        headers,
     });
     if (!response.ok) {
         const errText = await response.text();

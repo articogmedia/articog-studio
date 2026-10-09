@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-const MODULE_PATHS = ['/lib/gateway/', '/packages/studio/src/'];
+const MODULE_PATHS = ['/lib/gateway/', '/lib/muapi/', '/lib/supabase/', '/packages/studio/src/'];
 
 export async function resolve(specifier, context, nextResolve) {
   try {
