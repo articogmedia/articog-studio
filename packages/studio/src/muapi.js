@@ -18,6 +18,15 @@ const BASE_URL = (process.env.NEXT_PUBLIC_USE_OWN_GATEWAY === 'true')
     : ((typeof window !== 'undefined' && window.location?.protocol?.startsWith('http'))
         ? '/api'
         : 'https://api.muapi.ai');
+
+const BYTEPLUS_SEEDANCE_25_ENDPOINT = /^seedance-2\.5-(?:(?:intl|spicy)-)?(?:text-to-video|image-to-video|first-last-frame|omni-reference)(?:-(?:480p|1080p))?$/;
+
+export function getApiBaseUrl(endpoint) {
+    const isBrowserHttp = typeof window !== 'undefined' && window.location?.protocol?.startsWith('http');
+    if (isBrowserHttp && BYTEPLUS_SEEDANCE_25_ENDPOINT.test(endpoint || '')) return '';
+    return BASE_URL;
+}
+
 const PROXY_WF_BASE = '/api/workflow';
 const FILE_UPLOAD_TIMEOUT_MS = 300_000;
 const FILE_UPLOAD_PENDING_PROGRESS = 99;
@@ -43,9 +52,9 @@ function includeRequiredArrayDefaults(model, payload) {
     return Object.keys(defaults).length > 0 ? { ...defaults, ...payload } : payload;
 }
 
-async function pollForResult(requestId, key, maxAttempts = 900, interval = 2000) {
+async function pollForResult(requestId, key, maxAttempts = 900, interval = 2000, baseUrl = BASE_URL) {
     return pollForGenerationResult({
-        baseUrl: BASE_URL,
+        baseUrl,
         requestId,
         apiKey: key,
         maxAttempts,
@@ -64,7 +73,8 @@ function normalizePredictionResult(submitData, result, outputUrl) {
 }
 
 async function submitAndPoll(endpoint, payload, key, onRequestId, maxAttempts = 60) {
-    const url = `${BASE_URL}/api/v1/${endpoint}`;
+    const baseUrl = getApiBaseUrl(endpoint);
+    const url = `${baseUrl}/api/v1/${endpoint}`;
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': key },
@@ -79,7 +89,7 @@ async function submitAndPoll(endpoint, payload, key, onRequestId, maxAttempts = 
     const requestId = submitData.request_id || submitData.id;
     if (!requestId) return submitData;
     if (onRequestId) onRequestId(requestId);
-    const result = await pollForResult(requestId, key, maxAttempts);
+    const result = await pollForResult(requestId, key, maxAttempts, 2000, baseUrl);
     const outputUrl = result.outputs?.[0] || result.url || result.output?.url;
     return normalizePredictionResult(submitData, result, outputUrl);
 }

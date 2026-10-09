@@ -64,6 +64,11 @@ const SEEDANCE_25_SEED_INPUT = Object.freeze({
   minValue: -1,
   maxValue: 4294967295,
 });
+
+function isSupportedSeedance25Model(model) {
+  return !/^seedance-2\.5-.+-4k$/.test(model.id);
+}
+
 const GROK_ASPECT_RATIO_INPUT = Object.freeze({
   type: "string", title: "Aspect Ratio", name: "aspect_ratio",
   enum: Object.freeze(["9:16", "16:9", "2:3", "3:2", "1:1"]),
@@ -10189,7 +10194,7 @@ export const t2vModels = [
     "example_url": "https://cdn.muapi.ai/assets/2d77df89-9492-4c7d-b434-7684d0ce3bb8.avif",
     "image_url": "https://cdn.muapi.ai/assets/2d77df89-9492-4c7d-b434-7684d0ce3bb8.avif"
   }
-];
+].filter(isSupportedSeedance25Model);
 
 export const getVideoModelById = (id) => t2vModels.find(m => m.id === id);
 
@@ -27226,7 +27231,7 @@ export const i2vModels = [
     "example_url": "https://cdn.muapi.ai/assets/75c82e2e-3772-4289-9f7b-2cb794643bea.avif",
     "image_url": "https://cdn.muapi.ai/assets/75c82e2e-3772-4289-9f7b-2cb794643bea.avif"
   }
-];
+].filter(isSupportedSeedance25Model);
 
 export const getI2IModelById = (id) => i2iModels.find(m => m.id === id);
 export const getI2VModelById = (id) => i2vModels.find(m => m.id === id);
@@ -31272,7 +31277,7 @@ export const v2vModels = [
     "example_url": "https://d3adwkbyhxyrtq.cloudfront.net/webassets/videomodels/topaz-upscaler.mp4",
     "image_url": "https://d3adwkbyhxyrtq.cloudfront.net/webassets/videomodels/topaz-upscaler.avif"
   }
-];
+].filter(isSupportedSeedance25Model);
 
 // ─── LipSync / Speech-to-Video models ────────────────────────────────────────
 // Image-based: portrait image + audio → talking video
