@@ -225,7 +225,7 @@ const NAVIGATION_CATEGORIES = [
   {
     id: 'video',
     label: 'Video',
-    tabIds: ['video', 'lipsync'],
+    tabIds: ['video'],
     icon: (
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="4" width="15" height="16" rx="2"/>
@@ -870,12 +870,14 @@ export default function StandaloneShell({ locale = 'en' }) {
           </div>
 
           {/* Active Tab Breadcrumb Badge */}
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.05] text-xs text-white/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-white" />
-            <span className="font-medium text-white/80">
-              {tabLabel(activeTab) || copy.shell.studioFallback}
-            </span>
-          </div>
+          {activeTab !== 'lipsync' && (
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.05] text-xs text-white/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-white" />
+              <span className="font-medium text-white/80">
+                {tabLabel(activeTab) || copy.shell.studioFallback}
+              </span>
+            </div>
+          )}
 
           {/* Right: Actions */}
           <div className="flex-shrink-0 flex items-center gap-3">
