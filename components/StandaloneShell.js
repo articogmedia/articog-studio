@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { ImageStudio, VideoStudio, ClippingStudio, MotionControlStudio, VibeMotionStudio, LipSyncStudio, RecastStudio, CinemaStudio, AudioStudio, MarketingStudio, WorkflowStudio, AgentStudio, AppsStudio, AiInfluencerStudio, LayersStudio, getUserBalance, INTERNAL_SESSION_KEY } from 'studio';
 
@@ -809,7 +810,7 @@ export default function StandaloneShell({ locale = 'en' }) {
 
   return (
     <div 
-      className="h-screen bg-black flex flex-col overflow-hidden text-white relative"
+      className="h-dvh bg-black flex flex-col overflow-hidden text-white relative"
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -903,10 +904,16 @@ export default function StandaloneShell({ locale = 'en' }) {
 
             {/* Logo & Title */}
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                </svg>
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-white">
+                <Image
+                  src="/articog-logo.png"
+                  alt=""
+                  aria-hidden="true"
+                  width={44}
+                  height={44}
+                  priority
+                  className="h-11 w-11 rounded-full invert"
+                />
               </div>
               <span className="text-sm font-bold tracking-tight hidden sm:block text-white">
                 {copy.shell.brand}
