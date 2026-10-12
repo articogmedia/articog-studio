@@ -8,6 +8,7 @@ await new Promise((resolve) => process.nextTick(resolve));
 const { MODEL_REGISTRY } = await import('../lib/gateway/registry.js');
 const { check, getEntry, start } = await import('../lib/gateway/providers/seedance.js');
 const { getApiBaseUrl } = await import('../packages/studio/src/muapi.js');
+const { pollForGenerationResult } = await import('../packages/studio/src/utils/generationLifecycle.js');
 const { t2vModels, i2vModels, v2vModels } = await import('../packages/studio/src/models.js');
 
 const originalFetch = globalThis.fetch;
@@ -124,15 +125,19 @@ test('check maps processing, succeeded, and failed ModelArk tasks', async () => 
   process.env.ARK_BASE_URL = 'https://ark.ap-southeast.bytepluses.com/api/v3';
   const requests = [];
   const tasks = [
+    { status: 'queued' },
     { status: 'running' },
     { status: 'succeeded', content: { video_url: 'https://ark.test/video.mp4' }, usage: { duration: 5 } },
     { status: 'failed', error: { message: 'Generation rejected' } },
+    { status: 'cancelled' },
+    { status: 'expired' },
   ];
   globalThis.fetch = async (url) => {
     requests.push(url);
     return new Response(JSON.stringify(tasks.shift()), { status: 200 });
   };
 
+  assert.deepEqual(await check({ externalId: 'task-queued' }), { status: 'processing' });
   assert.deepEqual(await check({ externalId: 'task-running' }), { status: 'processing' });
   assert.deepEqual(await check({ externalId: 'task-done' }, { saveVideo: async (url, ext) => `${url}.${ext}.saved` }), {
     status: 'completed',
@@ -140,11 +145,58 @@ test('check maps processing, succeeded, and failed ModelArk tasks', async () => 
     usage: { duration: 5 },
   });
   assert.deepEqual(await check({ externalId: 'task-failed' }), { status: 'failed', error: 'Generation rejected' });
+  assert.deepEqual(await check({ externalId: 'task-cancelled' }), { status: 'failed', error: 'Seedance task cancelled' });
+  assert.deepEqual(await check({ externalId: 'task-expired' }), { status: 'failed', error: 'Seedance task expired' });
   assert.deepEqual(requests, [
+    'https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks/task-queued',
     'https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks/task-running',
     'https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks/task-done',
     'https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks/task-failed',
+    'https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks/task-cancelled',
+    'https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks/task-expired',
   ]);
+});
+
+test('check surfaces ModelArk polling errors without leaking credentials', async () => {
+  process.env.ARK_API_KEY = 'test-key';
+  globalThis.fetch = async (_url, init) => {
+    assert.equal(init.headers.Authorization, 'Bearer test-key');
+    return new Response(JSON.stringify({ error: { message: 'Task lookup unavailable' } }), { status: 503 });
+  };
+
+  await assert.rejects(
+    check({ externalId: 'task-error' }),
+    (error) => {
+      assert.match(error.message, /Task lookup unavailable/);
+      assert.doesNotMatch(error.message, /test-key/);
+      return true;
+    },
+  );
+});
+
+test('generation polling stops at its configured timeout without a live request', async () => {
+  let pollCount = 0;
+
+  await assert.rejects(
+    pollForGenerationResult({
+      baseUrl: '',
+      requestId: 'task-timeout',
+      apiKey: 'test-key',
+      maxAttempts: 2,
+      interval: 0,
+      fetchImpl: async () => {
+        pollCount += 1;
+        return new Response(JSON.stringify({ status: 'running' }), { status: 200 });
+      },
+    }),
+    (error) => {
+      assert.match(error.message, /Generation timed out/);
+      assert.equal(error.requestId, 'task-timeout');
+      return true;
+    },
+  );
+
+  assert.equal(pollCount, 2);
 });
 
 test('browser Seedance 2.5 submissions use the app gateway without changing other model routing', () => {
