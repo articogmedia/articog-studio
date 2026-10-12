@@ -213,7 +213,7 @@ const NAVIGATION_CATEGORIES = [
   {
     id: 'images',
     label: 'Images',
-    tabIds: ['image', 'layers', 'cinema', 'design-agent', 'ai-influencer'],
+    tabIds: ['image', 'cinema', 'ai-influencer'],
     icon: (
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -225,7 +225,7 @@ const NAVIGATION_CATEGORIES = [
   {
     id: 'video',
     label: 'Video',
-    tabIds: ['video', 'clipping', 'motion-control', 'vibe-motion', 'lipsync', 'body-swap', 'marketing'],
+    tabIds: ['video', 'lipsync'],
     icon: (
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="4" width="15" height="16" rx="2"/>
@@ -246,20 +246,6 @@ const NAVIGATION_CATEGORIES = [
       </svg>
     )
   },
-  {
-    id: 'agents-automation',
-    label: 'Agents & Automation',
-    tabIds: ['agents', 'workflows'],
-    icon: (
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="6" height="6" rx="1"/>
-        <rect x="15" y="3" width="6" height="6" rx="1"/>
-        <rect x="9" y="15" width="6" height="6" rx="1"/>
-        <path d="M6 9v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9"/>
-        <path d="M12 13v2"/>
-      </svg>
-    )
-  }
 ];
 
 const EXPLORE_APPS_TAB = TABS.find((tab) => tab.id === 'apps');
