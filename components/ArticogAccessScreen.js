@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import ArticogLogo from './ArticogLogo';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -37,13 +38,8 @@ export default function ArticogAccessScreen({ initialProfile, accessError, onCom
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.07),transparent_58%)]" />
       <section className="relative w-full max-w-[480px] rounded-xl border border-white/10 bg-[#0b0c0c]/95 px-6 py-9 shadow-2xl shadow-black/50 sm:px-10 sm:py-11">
         <div className="mb-9 text-center">
-          <div className="mx-auto mb-6 flex h-11 w-11 items-center justify-center rounded-lg border border-white/15 bg-white text-[#101111]">
-            <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M12 2 2 7l10 5 10-5-10-5Z" />
-              <path d="m2 17 10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-          </div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">Articog Studio</p>
+          <ArticogLogo className="mx-auto mb-6" />
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">ARTICOG STUDIO</p>
           <h1 className="mt-3 text-[25px] font-semibold leading-tight">Your creative studio, ready.</h1>
         </div>
 

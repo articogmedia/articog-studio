@@ -119,22 +119,11 @@ select {
 }
 
 .scrollbar-none::-webkit-scrollbar {
-  height: 6px;
-  width: 6px;
-}
-.scrollbar-none::-webkit-scrollbar-track {
-  background: transparent;
-}
-.scrollbar-none::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 999px;
-}
-.scrollbar-none::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  display: none;
 }
 .scrollbar-none {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 @keyframes fade-in-up {

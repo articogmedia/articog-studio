@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { ImageStudio, VideoStudio, ClippingStudio, MotionControlStudio, VibeMotionStudio, LipSyncStudio, RecastStudio, CinemaStudio, AudioStudio, MarketingStudio, WorkflowStudio, AgentStudio, AppsStudio, AiInfluencerStudio, LayersStudio, getUserBalance, INTERNAL_SESSION_KEY } from 'studio';
 
@@ -12,6 +11,7 @@ const DesignAgentStudio = dynamic(() => import('studio').then(mod => mod.DesignA
 });
 import axios from 'axios';
 import ArticogAccessScreen from './ArticogAccessScreen';
+import ArticogLogo from './ArticogLogo';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { getCommonCopy, getLocaleConfig, localizeStudioPath } from '@/lib/locales';
 
@@ -353,10 +353,6 @@ export default function StandaloneShell({ locale = 'en' }) {
   const [showSettings, setShowSettings] = useState(false);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [hasMounted, setHasMounted] = useState(false);
-  const [showVadooBanner, setShowVadooBanner] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('vadoo_banner_dismissed') !== '1';
-    return true;
-  });
 
   // Sidebar Collapsed & Mobile Drawer State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
@@ -833,30 +829,6 @@ export default function StandaloneShell({ locale = 'en' }) {
         </div>
       )}
 
-      {/* Vadoo promo banner */}
-      {showVadooBanner && (
-        <div className="flex-shrink-0 w-full bg-white/[0.06] border-b border-white/[0.08] flex items-center justify-center px-4 py-2 gap-3 relative z-50">
-          <a
-            href="https://vadoo.tv"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[13px] font-medium text-white/80 hover:text-white transition-colors text-center"
-          >
-            {copy.shell.vadooPromo}
-          </a>
-          <button
-            onClick={() => {
-              setShowVadooBanner(false);
-              localStorage.setItem('vadoo_banner_dismissed', '1');
-            }}
-            className="absolute right-3 text-white/60 hover:text-white transition-colors text-lg leading-none"
-            aria-label={copy.shell.dismiss}
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
       {/* Header */}
       {isHeaderVisible && (
         <header className="flex-shrink-0 h-14 border-b border-white/[0.08] flex items-center justify-between px-4 bg-black z-50 gap-4">
@@ -904,17 +876,7 @@ export default function StandaloneShell({ locale = 'en' }) {
 
             {/* Logo & Title */}
             <div className="flex items-center gap-2.5">
-              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-white">
-                <Image
-                  src="/articog-logo.png"
-                  alt=""
-                  aria-hidden="true"
-                  width={44}
-                  height={44}
-                  priority
-                  className="h-11 w-11 rounded-full invert"
-                />
-              </div>
+              <ArticogLogo />
               <span className="text-sm font-bold tracking-tight hidden sm:block text-white">
                 {copy.shell.brand}
               </span>
