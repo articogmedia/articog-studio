@@ -5,7 +5,7 @@ import ArticogLogo from './ArticogLogo';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function ArticogAccessScreen({ authenticated = false, initialProfile, accessError, onComplete }) {
+export default function ArticogAccessScreen({ initialProfile, onComplete }) {
   const [fullName, setFullName] = useState(initialProfile?.fullName || '');
   const [email, setEmail] = useState(initialProfile?.email || '');
   const [errors, setErrors] = useState({});
@@ -31,7 +31,7 @@ export default function ArticogAccessScreen({ authenticated = false, initialProf
     try {
       await onComplete({ fullName: trimmedName, email: normalizedEmail });
     } catch (error) {
-      setErrors({ form: error?.message || 'Could not save your profile. Please try again.' });
+      setErrors({ form: error?.message || 'Could not save your details in this browser.' });
       setIsSubmitting(false);
     }
   }
@@ -48,20 +48,10 @@ export default function ArticogAccessScreen({ authenticated = false, initialProf
           <h1 className="mt-3 text-[25px] font-semibold leading-tight">Your creative studio, ready.</h1>
         </div>
 
-        {!authenticated ? (
-          <div className="space-y-5">
-            {accessError && <p role="alert" className="rounded-lg border border-rose-400/25 bg-rose-400/5 px-3 py-2.5 text-sm text-rose-200">{accessError}</p>}
-            <p className="text-sm leading-6 text-white/65">Sign in to your Articog account to continue.</p>
-            <a href="/login" className="flex min-h-12 w-full items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-semibold text-[#101111] transition-colors hover:bg-white/90">
-              Sign in to Articog Studio
-            </a>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} noValidate className="space-y-5">
-          {accessError && <p role="alert" className="rounded-lg border border-rose-400/25 bg-rose-400/5 px-3 py-2.5 text-sm text-rose-200">{accessError}</p>}
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
           {errors.form && <p role="alert" className="rounded-lg border border-rose-400/25 bg-rose-400/5 px-3 py-2.5 text-sm text-rose-200">{errors.form}</p>}
           <div>
-            <label htmlFor="access-full-name" className="text-[13px] font-medium text-white/85">Full name <span className="text-rose-300">*</span></label>
+            <label htmlFor="access-full-name" className="text-[13px] font-medium text-white/85">Full Name <span className="text-rose-300">*</span></label>
             <input
               id="access-full-name"
               name="name"
@@ -80,7 +70,7 @@ export default function ArticogAccessScreen({ authenticated = false, initialProf
           </div>
 
           <div>
-            <label htmlFor="access-email" className="text-[13px] font-medium text-white/85">Email address <span className="text-rose-300">*</span></label>
+            <label htmlFor="access-email" className="text-[13px] font-medium text-white/85">Email Address <span className="text-rose-300">*</span></label>
             <input
               id="access-email"
               name="email"
@@ -104,10 +94,9 @@ export default function ArticogAccessScreen({ authenticated = false, initialProf
             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-white px-5 py-3 text-sm font-semibold text-[#101111] transition-colors hover:bg-white/90 disabled:cursor-wait disabled:opacity-60"
           >
             {isSubmitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/25 border-t-black" aria-hidden="true" />}
-            {isSubmitting ? 'Opening Articog Studio…' : 'Continue to Articog Studio'}
+            {isSubmitting ? 'Opening Studio...' : 'Continue to Studio'}
           </button>
         </form>
-        )}
       </section>
     </main>
   );

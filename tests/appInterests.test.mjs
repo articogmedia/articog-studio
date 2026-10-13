@@ -8,9 +8,14 @@ await new Promise((resolve) => process.nextTick(resolve));
 const { createAppInterestsHandlers } = await import('../lib/supabase/appInterestsHandlers.js');
 const { createBalanceHandler } = await import('../lib/supabase/balanceHandler.js');
 const { shouldRefreshSupabaseSession } = await import('../lib/supabase/middlewarePolicy.js');
-const { saveArticogProfile } = await import('../lib/supabase/profileClient.js');
+const {
+  ACCESS_PROFILE_STORAGE_KEY,
+  clearStoredAccessProfile,
+  readStoredAccessProfile,
+  saveStoredAccessProfile,
+} = await import('../lib/accessProfileStorage.js');
 const { getForwardableApiKey, INTERNAL_SESSION_KEY, stripInternalSessionCredential } = await import('../lib/muapi/auth.js');
-const { getAppInterests, getUserBalance, registerAppInterest } = await import('../packages/studio/src/muapi.js');
+const { generateImage, getAppInterests, getUserBalance, registerAppInterest } = await import('../packages/studio/src/muapi.js');
 
 const originalFetch = globalThis.fetch;
 const originalWindow = globalThis.window;
@@ -192,24 +197,43 @@ test('Supabase session refresh covers authenticated first-party APIs but not ups
   assert.equal(shouldRefreshSupabaseSession('/studio/image', false), true);
 });
 
-test('profile completion requires a successful same-origin authenticated response', async () => {
-  const submittedProfile = { fullName: 'Studio User', email: 'user@example.com' };
-  let requestInit;
+test('static access profile persists locally and clearing browser storage shows the access screen again', () => {
+  const values = new Map();
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+    removeItem: (key) => values.delete(key),
+  };
+  const submittedProfile = { fullName: ' Studio User ', email: 'USER@example.com' };
 
-  await assert.rejects(
-    saveArticogProfile(submittedProfile, async (_url, init) => {
-      requestInit = init;
-      return Response.json({ detail: 'Sign in to continue.' }, { status: 401 });
-    }),
-    /Sign in to continue/,
-  );
+  assert.equal(readStoredAccessProfile(storage), null);
+  const saved = saveStoredAccessProfile(submittedProfile, storage);
+  assert.deepEqual(saved, {
+    fullName: 'Studio User',
+    email: 'user@example.com',
+    company: '',
+  });
+  assert.equal(values.has(ACCESS_PROFILE_STORAGE_KEY), true);
+  assert.deepEqual(readStoredAccessProfile(storage), saved);
 
-  assert.equal(requestInit.method, 'POST');
-  assert.equal(requestInit.credentials, 'same-origin');
+  clearStoredAccessProfile(storage);
+  assert.equal(readStoredAccessProfile(storage), null);
+});
 
-  const savedProfile = { ...submittedProfile, company: '' };
-  const result = await saveArticogProfile(submittedProfile, async () => (
-    Response.json({ complete: true, profile: savedProfile })
-  ));
-  assert.deepEqual(result, savedProfile);
+test('internal session marker is not sent as a generation API credential', async () => {
+  const originalFetch = globalThis.fetch;
+  let request;
+  globalThis.fetch = async (url, init) => {
+    request = { url, init };
+    return Response.json({ status: 'completed' });
+  };
+
+  try {
+    await generateImage(INTERNAL_SESSION_KEY, { model: 'test-model', prompt: 'Test image' });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(request.init.headers['x-api-key'], undefined);
+  assert.equal(request.init.headers['Content-Type'], 'application/json');
 });

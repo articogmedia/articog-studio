@@ -79,9 +79,11 @@ function normalizePredictionResult(submitData, result, outputUrl) {
 async function submitAndPoll(endpoint, payload, key, onRequestId, maxAttempts = 60) {
     const baseUrl = getApiBaseUrl(endpoint);
     const url = `${baseUrl}/api/v1/${endpoint}`;
+    const headers = { 'Content-Type': 'application/json' };
+    if (!isInternalSession(key)) headers['x-api-key'] = key;
     const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': key },
+        headers,
         body: JSON.stringify(payload)
     });
     if (!response.ok) {
