@@ -83,6 +83,7 @@ async function submitAndPoll(endpoint, payload, key, onRequestId, maxAttempts = 
     if (!isInternalSession(key)) headers['x-api-key'] = key;
     const response = await fetch(url, {
         method: 'POST',
+        credentials: 'same-origin',
         headers,
         body: JSON.stringify(payload)
     });

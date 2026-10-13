@@ -3,6 +3,7 @@ import { MODEL_REGISTRY } from '@/lib/gateway/registry';
 import { createJob } from '@/lib/gateway/jobs';
 import { runJob } from '@/lib/gateway/run';
 import { getUser } from '@/lib/supabase/user';
+import { requireAuthenticatedGatewayUser } from '@/lib/gateway/auth';
 import { admin } from '@/lib/supabase/admin';
 import { createJob as createSupabaseJob } from '@/lib/gateway/jobs.supabase';
 import { runSupabaseJob } from '@/lib/gateway/run.supabase';
@@ -22,10 +23,8 @@ export async function POST(request, { params }) {
   if (process.env.NODE_ENV !== 'production') console.log('[gateway]', endpoint, JSON.stringify(input).slice(0, 500));
 
   if (process.env.NEXT_PUBLIC_USE_OWN_GATEWAY === 'true') {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ detail: 'Please sign in to use the gateway.' }, { status: 401 });
-    }
+    const { user, response } = await requireAuthenticatedGatewayUser(getUser);
+    if (response) return response;
 
     let profile = null;
     try {

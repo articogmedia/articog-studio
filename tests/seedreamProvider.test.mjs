@@ -137,14 +137,21 @@ test('retries a size-related 400 once with the tier keyword', async () => {
     return new Response(JSON.stringify({ data: [{ url: 'https://images.test/retried.jpg' }] }), { status: 200 });
   };
 
-  await start({ prompt: 'A blue ceramic vase' }, {
+  const savedOutputs = [];
+  const result = await start({ prompt: 'A blue ceramic vase' }, {
     endpoint: 'seedream-5.0-pro',
-    saveFromUrl: async () => '/saved/retried.jpeg',
+    saveFromUrl: async (url, extension) => {
+      savedOutputs.push({ url, extension });
+      return '/api/files/retried.jpeg';
+    },
   });
 
   assert.equal(requestBodies.length, 2);
   assert.equal(requestBodies[0].size, '2048x2048');
   assert.equal(requestBodies[1].size, '2K');
+  assert.deepEqual(savedOutputs, [{ url: 'https://images.test/retried.jpg', extension: 'jpeg' }]);
+  assert.deepEqual(result.outputs, ['/api/files/retried.jpeg']);
+  assert.equal(result.status, 'completed');
 });
 
 test('API errors surface useful messages without revealing the key', async () => {

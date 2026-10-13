@@ -8,6 +8,7 @@ await new Promise((resolve) => process.nextTick(resolve));
 const { createAppInterestsHandlers } = await import('../lib/supabase/appInterestsHandlers.js');
 const { createBalanceHandler } = await import('../lib/supabase/balanceHandler.js');
 const { shouldRefreshSupabaseSession } = await import('../lib/supabase/middlewarePolicy.js');
+const { requireAuthenticatedGatewayUser } = await import('../lib/gateway/auth.js');
 const {
   ACCESS_PROFILE_STORAGE_KEY,
   clearStoredAccessProfile,
@@ -165,6 +166,20 @@ test('first-party balance handler authenticates the Supabase session', async () 
   assert.equal(denied.status, 401);
 });
 
+test('model gateway requires a server-verified Supabase user', async () => {
+  const denied = await requireAuthenticatedGatewayUser(async () => null);
+  assert.equal(denied.user, null);
+  assert.equal(denied.response.status, 401);
+  assert.deepEqual(await denied.response.json(), {
+    detail: 'Please sign in to use the gateway.',
+  });
+
+  const user = { id: 'verified-user' };
+  const allowed = await requireAuthenticatedGatewayUser(async () => user);
+  assert.equal(allowed.user, user);
+  assert.equal(allowed.response, null);
+});
+
 test('proxy credential filtering rejects the internal sentinel for every Bearer casing and preserves BYOK credentials', () => {
   assert.equal(getForwardableApiKey(INTERNAL_SESSION_KEY), null);
   assert.equal(getForwardableApiKey('  muapi-byok-key  '), 'muapi-byok-key');
@@ -236,4 +251,5 @@ test('internal session marker is not sent as a generation API credential', async
 
   assert.equal(request.init.headers['x-api-key'], undefined);
   assert.equal(request.init.headers['Content-Type'], 'application/json');
+  assert.equal(request.init.credentials, 'same-origin');
 });
