@@ -146,6 +146,8 @@ export default function StandaloneShell({ locale = 'en' }) {
   const [balance, setBalance] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [droppedFiles, setDroppedFiles] = useState(null);
 
   // Sidebar Collapsed & Mobile Drawer State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
@@ -222,6 +224,10 @@ export default function StandaloneShell({ locale = 'en' }) {
       const data = await getUserBalance(key);
       setBalance(data.balance);
     } catch (err) {
+      if (err?.status === 401 || err?.status === 403) {
+        setBalance(null);
+        return;
+      }
       console.error('Balance fetch failed:', err);
     }
   }, []);
@@ -503,10 +509,15 @@ export default function StandaloneShell({ locale = 'en' }) {
     e.preventDefault();
     e.stopPropagation();
     const isFileDrag = e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files');
-    if (isFileDrag && e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+    if (
+      isFileDrag &&
+      e.dataTransfer.items &&
+      e.dataTransfer.items.length > 0 &&
+      (activeTab === 'image' || activeTab === 'video')
+    ) {
       setIsDragging(true);
     }
-  }, []);
+  }, [activeTab]);
 
   const handleDragLeave = useCallback((e) => {
     e.preventDefault();
@@ -522,10 +533,10 @@ export default function StandaloneShell({ locale = 'en' }) {
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
+    if (files.length > 0 && (activeTab === 'image' || activeTab === 'video')) {
       setDroppedFiles(files);
     }
-  }, []);
+  }, [activeTab]);
 
   const handleFilesHandled = useCallback(() => {
     setDroppedFiles(null);
@@ -784,10 +795,10 @@ export default function StandaloneShell({ locale = 'en' }) {
         {/* Studio Content */}
         <div className="flex-1 min-h-0 h-full relative overflow-hidden bg-black">
         <div className={activeTab === 'image' ? "h-full w-full" : "hidden"}>
-          <ImageStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
+          <ImageStudio apiKey={apiKey} locale={locale} droppedFiles={activeTab === 'image' ? droppedFiles : null} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
         </div>
         <div className={activeTab === 'video' ? "h-full w-full" : "hidden"}>
-          <VideoStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('video')} onGenerationEnd={makeGenerationEndCallback('video')} onGenerationComplete={makeSuccessCallback('video')} onGenerationError={makeErrorCallback('video')} />
+          <VideoStudio apiKey={apiKey} locale={locale} droppedFiles={activeTab === 'video' ? droppedFiles : null} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('video')} onGenerationEnd={makeGenerationEndCallback('video')} onGenerationComplete={makeSuccessCallback('video')} onGenerationError={makeErrorCallback('video')} />
         </div>
         <div className={activeTab === 'cinema' ? "h-full w-full" : "hidden"}>
           <CinemaStudio apiKey={apiKey} locale={locale} onGenerationStart={makeGenerationStartCallback('cinema')} onGenerationEnd={makeGenerationEndCallback('cinema')} onGenerationComplete={makeSuccessCallback('cinema')} onGenerationError={makeErrorCallback('cinema')} />

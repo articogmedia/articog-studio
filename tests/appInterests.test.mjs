@@ -122,6 +122,19 @@ test('browser helpers route internal balance and interests through same-origin s
   }
 });
 
+test('balance helper preserves the unauthorized status for the UI to handle safely', async () => {
+  globalThis.fetch = async () => Response.json({ detail: 'Please sign in.' }, { status: 401 });
+
+  await assert.rejects(
+    getUserBalance(INTERNAL_SESSION_KEY),
+    (error) => {
+      assert.match(error.message, /Failed to fetch balance: 401/);
+      assert.equal(error.status, 401);
+      return true;
+    },
+  );
+});
+
 test('first-party balance handler authenticates the Supabase session', async () => {
   const authenticated = createBalanceHandler({
     isOwnGateway: () => true,

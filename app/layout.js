@@ -12,6 +12,7 @@ const sora = Sora({
 export const metadata = {
   title: 'Articog Studio',
   description: 'AI creative studio by Articog. Generate images and videos with leading AI models.',
+  icons: { icon: '/articog-logo.png' },
 };
 
 export default async function RootLayout({ children }) {

@@ -486,7 +486,9 @@ export async function getUserBalance(apiKey) {
     if (!response.ok) {
         const errText = await response.text();
         notifyAuthRequired(response.status, errText);
-        throw new Error(`Failed to fetch balance: ${response.status} - ${errText.slice(0, 100)}`);
+        const error = new Error(`Failed to fetch balance: ${response.status} - ${errText.slice(0, 100)}`);
+        error.status = response.status;
+        throw error;
     }
     return await response.json();
 }
