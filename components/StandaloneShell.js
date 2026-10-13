@@ -7,6 +7,7 @@ import axios from 'axios';
 import ArticogAccessScreen from './ArticogAccessScreen';
 import ArticogLogo from './ArticogLogo';
 import { supabaseBrowser } from '@/lib/supabase/client';
+import { saveArticogProfile } from '@/lib/supabase/profileClient';
 import { getCommonCopy, getLocaleConfig, localizeStudioPath } from '@/lib/locales';
 
 // Tab/category ids, icons, and English `label` fallbacks are stable
@@ -511,9 +512,9 @@ export default function StandaloneShell({ locale = 'en' }) {
     document.cookie = "muapi_key=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
   }, []);
 
-  const handleAccessComplete = useCallback((savedProfile) => {
-    setProfile(savedProfile);
-    setProfileAuthenticated(true);
+  const handleAccessComplete = useCallback(async (savedProfile) => {
+    const persistedProfile = await saveArticogProfile(savedProfile);
+    setProfile(persistedProfile);
     setApiKey(INTERNAL_SESSION_KEY);
     void fetchBalance(INTERNAL_SESSION_KEY);
   }, [fetchBalance]);

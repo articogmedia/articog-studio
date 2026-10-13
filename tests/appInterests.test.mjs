@@ -8,6 +8,7 @@ await new Promise((resolve) => process.nextTick(resolve));
 const { createAppInterestsHandlers } = await import('../lib/supabase/appInterestsHandlers.js');
 const { createBalanceHandler } = await import('../lib/supabase/balanceHandler.js');
 const { shouldRefreshSupabaseSession } = await import('../lib/supabase/middlewarePolicy.js');
+const { saveArticogProfile } = await import('../lib/supabase/profileClient.js');
 const { getForwardableApiKey, INTERNAL_SESSION_KEY, stripInternalSessionCredential } = await import('../lib/muapi/auth.js');
 const { getAppInterests, getUserBalance, registerAppInterest } = await import('../packages/studio/src/muapi.js');
 
@@ -189,4 +190,26 @@ test('Supabase session refresh covers authenticated first-party APIs but not ups
   assert.equal(shouldRefreshSupabaseSession('/api/v1/seedream-5.0-pro', false), false);
   assert.equal(shouldRefreshSupabaseSession('/api/v1/account/balance', false), true);
   assert.equal(shouldRefreshSupabaseSession('/studio/image', false), true);
+});
+
+test('profile completion requires a successful same-origin authenticated response', async () => {
+  const submittedProfile = { fullName: 'Studio User', email: 'user@example.com' };
+  let requestInit;
+
+  await assert.rejects(
+    saveArticogProfile(submittedProfile, async (_url, init) => {
+      requestInit = init;
+      return Response.json({ detail: 'Sign in to continue.' }, { status: 401 });
+    }),
+    /Sign in to continue/,
+  );
+
+  assert.equal(requestInit.method, 'POST');
+  assert.equal(requestInit.credentials, 'same-origin');
+
+  const savedProfile = { ...submittedProfile, company: '' };
+  const result = await saveArticogProfile(submittedProfile, async () => (
+    Response.json({ complete: true, profile: savedProfile })
+  ));
+  assert.deepEqual(result, savedProfile);
 });

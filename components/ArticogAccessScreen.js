@@ -5,13 +5,13 @@ import ArticogLogo from './ArticogLogo';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function ArticogAccessScreen({ initialProfile, accessError, onComplete }) {
+export default function ArticogAccessScreen({ authenticated = false, initialProfile, accessError, onComplete }) {
   const [fullName, setFullName] = useState(initialProfile?.fullName || '');
   const [email, setEmail] = useState(initialProfile?.email || '');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     if (isSubmitting) return;
 
@@ -28,7 +28,12 @@ export default function ArticogAccessScreen({ initialProfile, accessError, onCom
     if (Object.keys(nextErrors).length > 0) return;
 
     setIsSubmitting(true);
-    onComplete({ fullName: trimmedName, email: normalizedEmail });
+    try {
+      await onComplete({ fullName: trimmedName, email: normalizedEmail });
+    } catch (error) {
+      setErrors({ form: error?.message || 'Could not save your profile. Please try again.' });
+      setIsSubmitting(false);
+    }
   }
 
   const fieldClass = (field) => `mt-2 w-full rounded-lg border bg-white/[0.035] px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none transition-colors focus:border-white/45 ${errors[field] ? 'border-rose-400/70' : 'border-white/10'}`;
@@ -43,8 +48,18 @@ export default function ArticogAccessScreen({ initialProfile, accessError, onCom
           <h1 className="mt-3 text-[25px] font-semibold leading-tight">Your creative studio, ready.</h1>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        {!authenticated ? (
+          <div className="space-y-5">
+            {accessError && <p role="alert" className="rounded-lg border border-rose-400/25 bg-rose-400/5 px-3 py-2.5 text-sm text-rose-200">{accessError}</p>}
+            <p className="text-sm leading-6 text-white/65">Sign in to your Articog account to continue.</p>
+            <a href="/login" className="flex min-h-12 w-full items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-semibold text-[#101111] transition-colors hover:bg-white/90">
+              Sign in to Articog Studio
+            </a>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} noValidate className="space-y-5">
           {accessError && <p role="alert" className="rounded-lg border border-rose-400/25 bg-rose-400/5 px-3 py-2.5 text-sm text-rose-200">{accessError}</p>}
+          {errors.form && <p role="alert" className="rounded-lg border border-rose-400/25 bg-rose-400/5 px-3 py-2.5 text-sm text-rose-200">{errors.form}</p>}
           <div>
             <label htmlFor="access-full-name" className="text-[13px] font-medium text-white/85">Full name <span className="text-rose-300">*</span></label>
             <input
@@ -92,6 +107,7 @@ export default function ArticogAccessScreen({ initialProfile, accessError, onCom
             {isSubmitting ? 'Opening Articog Studio…' : 'Continue to Articog Studio'}
           </button>
         </form>
+        )}
       </section>
     </main>
   );
