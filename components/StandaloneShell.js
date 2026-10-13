@@ -347,11 +347,6 @@ export default function StandaloneShell({ locale = 'en' }) {
   const [showSettings, setShowSettings] = useState(false);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [hasMounted, setHasMounted] = useState(false);
-  const [showVadooBanner, setShowVadooBanner] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('vadoo_banner_dismissed') !== '1';
-    return true;
-  });
-
   // Sidebar Collapsed & Mobile Drawer State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window !== 'undefined') return localStorage.getItem('sidebar_collapsed') === 'true';
@@ -694,30 +689,6 @@ export default function StandaloneShell({ locale = 'en' }) {
               <span className="text-sm text-white/40">{copy.shell.dropHereHint}</span>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Vadoo promo banner */}
-      {showVadooBanner && (
-        <div className="flex-shrink-0 w-full bg-white flex items-center justify-center px-4 py-2 gap-3 relative z-50">
-          <a
-            href="https://vadoo.tv"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[13px] font-bold text-black hover:opacity-80 transition-opacity text-center"
-          >
-            {copy.shell.vadooPromo}
-          </a>
-          <button
-            onClick={() => {
-              setShowVadooBanner(false);
-              localStorage.setItem('vadoo_banner_dismissed', '1');
-            }}
-            className="absolute right-3 text-white/60 hover:text-white transition-colors text-lg leading-none"
-            aria-label={copy.shell.dismiss}
-          >
-            ✕
-          </button>
         </div>
       )}
 
