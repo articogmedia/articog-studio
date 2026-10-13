@@ -268,7 +268,7 @@ function Wan2gpModelCard(model) {
             ${!ready && model.unavailableReason ? `<p class="text-[10px] text-yellow-400/80 leading-relaxed">${escapeHtml(model.unavailableReason)}</p>` : ''}
             ${ready && model.availabilityNote ? `<p class="text-[10px] text-muted leading-relaxed">${escapeHtml(model.availabilityNote)}</p>` : ''}
             <div class="flex items-center gap-1.5 flex-wrap mt-1">
-                <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold ${model.type === 'video' ? 'bg-purple-500/15 text-purple-300' : 'bg-primary/10 text-primary'}">${model.type.toUpperCase()}</span>
+                <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold ${model.type === 'video' ? 'bg-white/15 text-white/70' : 'bg-primary/10 text-primary'}">${model.type.toUpperCase()}</span>
                 <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-white/5 text-muted">${model.modelType}</span>
                 ${(model.tags || []).filter(t => !['featured', 'remote'].includes(t)).map(t => `<span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-white/5 text-muted">${t}</span>`).join('')}
             </div>

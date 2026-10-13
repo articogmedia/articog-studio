@@ -667,14 +667,14 @@ export default function StandaloneShell({ locale = 'en' }) {
   }, []);
 
   if (!hasMounted) return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-      <div className="animate-spin text-[#22d3ee] text-3xl">◌</div>
+    <div className="min-h-screen bg-[#000000] flex items-center justify-center">
+      <div className="animate-spin text-[var(--color-accent)] text-3xl">◌</div>
     </div>
   );
 
   return (
     <div 
-      className="h-screen bg-[#030303] flex flex-col overflow-hidden text-white relative"
+      className="h-screen bg-[#000000] flex flex-col overflow-hidden text-white relative"
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -682,9 +682,9 @@ export default function StandaloneShell({ locale = 'en' }) {
     >
       {/* Drag Overlay */}
       {isDragging && (
-        <div className="fixed inset-0 z-[100] bg-[#22d3ee]/10 backdrop-blur-md border-4 border-dashed border-[#22d3ee]/50 flex items-center justify-center pointer-events-none transition-all duration-300">
+        <div className="fixed inset-0 z-[100] bg-[var(--color-accent)]/10 backdrop-blur-md border-4 border-dashed border-[var(--color-accent)]/50 flex items-center justify-center pointer-events-none transition-all duration-300">
           <div className="bg-[#0a0a0a] p-8 rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center gap-4 scale-110 animate-pulse">
-            <div className="w-20 h-20 bg-[#22d3ee] rounded-2xl flex items-center justify-center">
+            <div className="w-20 h-20 bg-[var(--color-accent)] rounded-2xl flex items-center justify-center">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
               </svg>
@@ -699,12 +699,12 @@ export default function StandaloneShell({ locale = 'en' }) {
 
       {/* Vadoo promo banner */}
       {showVadooBanner && (
-        <div className="flex-shrink-0 w-full bg-indigo-600 flex items-center justify-center px-4 py-2 gap-3 relative z-50">
+        <div className="flex-shrink-0 w-full bg-white flex items-center justify-center px-4 py-2 gap-3 relative z-50">
           <a
             href="https://vadoo.tv"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[13px] font-bold text-white hover:opacity-80 transition-opacity text-center"
+            className="text-[13px] font-bold text-black hover:opacity-80 transition-opacity text-center"
           >
             {copy.shell.vadooPromo}
           </a>
@@ -723,7 +723,7 @@ export default function StandaloneShell({ locale = 'en' }) {
 
       {/* Header */}
       {isHeaderVisible && (
-        <header className="flex-shrink-0 h-14 border-b border-white/[0.05] flex items-center justify-between px-4 bg-[#0a0a0b]/80 backdrop-blur-md z-50 gap-4">
+        <header className="flex-shrink-0 h-14 border-b border-white/[0.05] flex items-center justify-between px-4 bg-[#0a0a0a]/80 backdrop-blur-md z-50 gap-4">
           {/* Left: Mobile menu toggle + Logo + Desktop Sidebar Toggle */}
           <div className="flex items-center gap-3">
             {/* Mobile drawer toggle */}
@@ -761,14 +761,14 @@ export default function StandaloneShell({ locale = 'en' }) {
                 </svg>
               </button>
               {/* Custom Tooltip */}
-              <div className="absolute left-0 top-full mt-2 px-2.5 py-1 bg-[#121215]/95 backdrop-blur-md text-white text-[11px] font-medium rounded-md shadow-2xl border border-white/15 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 whitespace-nowrap">
+              <div className="absolute left-0 top-full mt-2 px-2.5 py-1 bg-[#111111]/95 backdrop-blur-md text-white text-[11px] font-medium rounded-md shadow-2xl border border-white/15 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 whitespace-nowrap">
                 {isSidebarCollapsed ? copy.shell.expandSidebar : copy.shell.collapseSidebar}
               </div>
             </div>
 
             {/* Logo & Title */}
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-[#22d3ee] rounded-lg flex items-center justify-center shadow-lg shadow-[#22d3ee]/20">
+              <div className="w-8 h-8 bg-[var(--color-accent)] rounded-lg flex items-center justify-center shadow-lg shadow-[var(--color-accent)]/20">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                 </svg>
@@ -781,7 +781,7 @@ export default function StandaloneShell({ locale = 'en' }) {
 
           {/* Active Tab Breadcrumb Badge */}
           <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.05] text-xs text-white/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#22d3ee]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]" />
             <span className="font-medium text-white/80">
               {tabLabel(activeTab) || copy.shell.studioFallback}
             </span>
@@ -825,7 +825,7 @@ export default function StandaloneShell({ locale = 'en' }) {
         {isHeaderVisible && (
           <aside
             className={`
-              fixed top-14 bottom-0 left-0 md:static md:h-full z-30 bg-[#0a0a0b]/95 backdrop-blur-md border-r border-white/[0.06] flex flex-col transition-all duration-300 ease-in-out flex-shrink-0 select-none
+              fixed top-14 bottom-0 left-0 md:static md:h-full z-30 bg-[#0a0a0a]/95 backdrop-blur-md border-r border-white/[0.06] flex flex-col transition-all duration-300 ease-in-out flex-shrink-0 select-none
               ${isMobileOpen ? 'translate-x-0 w-60 z-50' : '-translate-x-full md:translate-x-0'}
               ${isSidebarCollapsed ? 'md:w-16' : 'md:w-52'}
             `}
@@ -852,7 +852,7 @@ export default function StandaloneShell({ locale = 'en' }) {
                           group relative flex items-center rounded-xl transition-all duration-150 font-semibold
                           ${isCollapsed ? 'h-11 w-11 justify-center mx-auto' : 'px-3 py-2.5 w-full gap-3 text-left'}
                           ${isCategoryActive
-                            ? 'bg-gradient-to-r from-[#22d3ee]/15 to-purple-500/10 text-[#22d3ee] border border-[#22d3ee]/20 shadow-[0_0_15px_rgba(34,211,238,0.08)]'
+                            ? 'bg-white/[0.08] text-white border border-white/10 shadow-none'
                             : isCategoryOpen
                               ? 'bg-white/[0.06] text-white border border-white/[0.08]'
                               : 'text-white/60 hover:text-white hover:bg-white/[0.04] border border-transparent'
@@ -860,10 +860,10 @@ export default function StandaloneShell({ locale = 'en' }) {
                         `}
                       >
                         {isCategoryActive && (
-                          <span className="absolute left-0 top-2 bottom-2 w-1 bg-gradient-to-b from-[#22d3ee] to-[#a855f7] rounded-r-full shadow-[0_0_8px_rgba(34,211,238,0.6)]" />
+                          <span className="absolute left-0 top-2 bottom-2 w-1 bg-white rounded-r-full" />
                         )}
 
-                        <span className={`flex-shrink-0 transition-colors ${isCategoryActive ? 'text-[#22d3ee]' : 'text-white/55 group-hover:text-white'}`}>
+                        <span className={`flex-shrink-0 transition-colors ${isCategoryActive ? 'text-[var(--color-accent)]' : 'text-white/55 group-hover:text-white'}`}>
                           {category.icon}
                         </span>
 
@@ -911,15 +911,15 @@ export default function StandaloneShell({ locale = 'en' }) {
                                 className={`
                                   group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-medium transition-all duration-150
                                   ${isActive
-                                    ? 'bg-[#22d3ee]/12 text-[#22d3ee] border border-[#22d3ee]/20'
+                                    ? 'bg-[var(--color-accent)]/12 text-[var(--color-accent)] border border-[var(--color-accent)]/20'
                                     : 'text-white/55 hover:text-white hover:bg-white/[0.04] border border-transparent'
                                   }
                                 `}
                               >
                                 {isActive && (
-                                  <span className="absolute -left-[11px] top-2 bottom-2 w-0.5 rounded-full bg-[#22d3ee] shadow-[0_0_7px_rgba(34,211,238,0.7)]" />
+                                  <span className="absolute -left-[11px] top-2 bottom-2 w-0.5 rounded-full bg-[var(--color-accent)] shadow-none" />
                                 )}
-                                <span className={`flex-shrink-0 ${isActive ? 'text-[#22d3ee]' : 'text-white/45 group-hover:text-white/80'}`}>
+                                <span className={`flex-shrink-0 ${isActive ? 'text-[var(--color-accent)]' : 'text-white/45 group-hover:text-white/80'}`}>
                                   {tab.icon}
                                 </span>
                                 <span className="truncate">{tabLabel(tab.id)}</span>
@@ -945,15 +945,15 @@ export default function StandaloneShell({ locale = 'en' }) {
                       group relative flex items-center rounded-xl transition-all duration-150 text-[13px] font-semibold
                       ${isSidebarCollapsed && !isMobileOpen ? 'h-11 w-11 justify-center mx-auto' : 'px-3 py-2.5 w-full gap-3'}
                       ${activeTab === EXPLORE_APPS_TAB.id
-                        ? 'bg-gradient-to-r from-[#22d3ee]/15 to-purple-500/10 text-[#22d3ee] border border-[#22d3ee]/20'
+                        ? 'bg-white/[0.08] text-white border border-white/10'
                         : 'text-white/60 hover:text-white hover:bg-white/[0.04] border border-transparent'
                       }
                     `}
                   >
                     {activeTab === EXPLORE_APPS_TAB.id && (
-                      <span className="absolute left-0 top-2 bottom-2 w-1 bg-gradient-to-b from-[#22d3ee] to-[#a855f7] rounded-r-full" />
+                      <span className="absolute left-0 top-2 bottom-2 w-1 bg-white rounded-r-full" />
                     )}
-                    <span className={`flex-shrink-0 ${activeTab === EXPLORE_APPS_TAB.id ? 'text-[#22d3ee]' : 'text-white/50 group-hover:text-white'}`}>
+                    <span className={`flex-shrink-0 ${activeTab === EXPLORE_APPS_TAB.id ? 'text-[var(--color-accent)]' : 'text-white/50 group-hover:text-white'}`}>
                       {EXPLORE_APPS_TAB.icon}
                     </span>
                     {(!isSidebarCollapsed || isMobileOpen) && (
@@ -967,7 +967,7 @@ export default function StandaloneShell({ locale = 'en' }) {
         )}
 
         {/* Studio Content */}
-        <div className="flex-1 min-h-0 h-full relative overflow-hidden bg-[#030303]">
+        <div className="flex-1 min-h-0 h-full relative overflow-hidden bg-[#000000]">
         <div className={activeTab === 'image' ? "h-full w-full" : "hidden"}>
           <ImageStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
         </div>
@@ -1057,12 +1057,12 @@ export default function StandaloneShell({ locale = 'en' }) {
               key={generation.tabId}
               role="status"
               data-generation-tab={generation.tabId}
-              className="pointer-events-auto flex items-center gap-3 rounded-xl border border-cyan-500/40 bg-white px-3.5 py-3 text-[13px] text-zinc-900 shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
+              className="pointer-events-auto flex items-center gap-3 rounded-xl border border-white/40 bg-white px-3.5 py-3 text-[13px] text-zinc-900 shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
               data-testid="generation-activity"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-cyan-400/40 bg-cyan-50">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/40 bg-white">
                 <span
-                  className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-cyan-600/30 border-t-cyan-600"
+                  className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-cyan-600"
                   aria-hidden="true"
                 />
               </span>
@@ -1088,7 +1088,7 @@ export default function StandaloneShell({ locale = 'en' }) {
               <span
                 className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
                   notif.type === 'success'
-                    ? 'border-cyan-400/40 bg-cyan-50 text-cyan-600'
+                    ? 'border-white/40 bg-white text-white/70'
                     : 'border-red-400/40 bg-red-50 text-red-600'
                 }`}
               >
@@ -1127,7 +1127,7 @@ export default function StandaloneShell({ locale = 'en' }) {
                   <button
                     type="button"
                     onClick={() => handleOpenNotification(notif)}
-                    className="mt-1.5 text-[11px] font-bold text-cyan-600 transition-colors hover:text-cyan-700"
+                    className="mt-1.5 text-[11px] font-bold text-white/70 transition-colors hover:text-white/70"
                     aria-label={copy.notifications.openResult.replace('{label}', notif.label)}
                   >
                     {copy.notifications.open}

@@ -164,21 +164,20 @@ export default function AppsStudio({ apiKey, locale = 'en' }) {
   };
 
   const renderAppCard = (app, isDummy = false, index = 0) => {
-    // Premium Vibrant Gradients for placeholders
-    const gradients = [
-      "from-blue-600/20 to-indigo-600/20",
-      "from-purple-600/20 to-pink-600/20",
-      "from-amber-500/20 to-orange-600/20",
-      "from-emerald-500/20 to-teal-600/20",
-      "from-rose-500/20 to-red-600/20",
-      "from-cyan-500/20 to-blue-600/20",
+    const surfaces = [
+      "bg-white/[0.03]",
+      "bg-white/[0.05]",
+      "bg-[#0a0a0a]",
+      "bg-[#111111]",
+      "bg-[#1b1b1f]",
+      "bg-white/[0.03]",
     ];
-    const cardGradient = gradients[index % gradients.length];
+    const cardSurface = surfaces[index % surfaces.length];
     
     return (
       <div 
         key={app.name}
-        className="group bg-[#0a0a0a] border border-white/5 rounded-lg flex flex-col overflow-hidden transition-all duration-300 hover:border-white/10 hover:bg-[#0f0f0f] hover:shadow-2xl hover:shadow-blue-500/5 hover:-translate-y-1"
+        className="group bg-[#0a0a0a] border border-white/5 rounded-lg flex flex-col overflow-hidden transition-all duration-300 hover:border-white/10 hover:bg-[#0a0a0a] hover:shadow-2xl hover:shadow-none hover:-translate-y-1"
       >
         {/* Thumbnail Section */}
         <div className="relative h-44 w-full overflow-hidden bg-white/5">
@@ -189,17 +188,17 @@ export default function AppsStudio({ apiKey, locale = 'en' }) {
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             />
           ) : (
-            <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${cardGradient} transition-colors group-hover:scale-110 duration-700`}>
+            <div className={`w-full h-full flex items-center justify-center ${cardSurface} transition-colors group-hover:scale-110 duration-700`}>
               <app.icon className={`text-4xl opacity-20 group-hover:opacity-40 transition-opacity text-white`} />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+          <div className="absolute inset-0 bg-transparent pointer-events-none" />
         </div>
 
         {/* Content Section */}
         <div className="p-5 flex flex-col flex-1 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg text-[#22d3ee] border border-white/5 group-hover:border-white/10 transition-colors">
+            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg text-[var(--color-accent)] border border-white/5 group-hover:border-white/10 transition-colors">
               <app.icon />
             </div>
             <div className="flex-1 min-w-0">
@@ -223,7 +222,7 @@ export default function AppsStudio({ apiKey, locale = 'en' }) {
                 </button>
                 <button
                   onClick={() => setSelectedApp(app)}
-                  className="flex-1 py-2 bg-[#22d3ee]/10 text-[#22d3ee] rounded-md text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#22d3ee]/20 transition-all border border-[#22d3ee]/20 active:scale-95"
+                  className="flex-1 py-2 bg-[var(--color-accent)]/10 text-[var(--color-accent)] rounded-md text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[var(--color-accent)]/20 transition-all border border-[var(--color-accent)]/20 active:scale-95"
                 >
                   <FaExternalLinkAlt className="text-[9px]" />
                   {copy.card.demo}
@@ -244,7 +243,7 @@ export default function AppsStudio({ apiKey, locale = 'en' }) {
                   href={app.hosted || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 py-2 bg-[#22d3ee]/10 text-[#22d3ee] rounded-md text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#22d3ee]/20 transition-all border border-[#22d3ee]/20 active:scale-95"
+                  className="flex-1 py-2 bg-[var(--color-accent)]/10 text-[var(--color-accent)] rounded-md text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[var(--color-accent)]/20 transition-all border border-[var(--color-accent)]/20 active:scale-95"
                 >
                   <FaExternalLinkAlt className="text-[9px]" />
                   {copy.card.demo}
@@ -258,16 +257,16 @@ export default function AppsStudio({ apiKey, locale = 'en' }) {
   };
 
   return (
-    <div className="h-full w-full flex flex-col items-center bg-[#030303] overflow-y-auto custom-scrollbar relative">
+    <div className="h-full w-full flex flex-col items-center bg-[#000000] overflow-y-auto custom-scrollbar relative">
       <Toaster position="bottom-right" reverseOrder={false} />
       
       <div className="flex flex-col gap-10 items-center w-full max-w-7xl pt-12 pb-24 px-6">
         
         {/* Header Section */}
         <div className="text-center space-y-6 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#22d3ee]/10 border border-[#22d3ee]/20 rounded-full">
-            <FaDollarSign className="text-[#22d3ee] text-xs" />
-            <span className="text-[10px] font-black text-[#22d3ee] uppercase tracking-widest">{copy.hero.badge}</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 rounded-full">
+            <FaDollarSign className="text-[var(--color-accent)] text-xs" />
+            <span className="text-[10px] font-black text-[var(--color-accent)] uppercase tracking-widest">{copy.hero.badge}</span>
           </div>
           <h1 className="text-5xl font-black text-white tracking-tighter leading-[0.9]">
             {copy.hero.titleLine1}<br />{copy.hero.titleLine2}
@@ -285,7 +284,7 @@ export default function AppsStudio({ apiKey, locale = 'en' }) {
             { icon: FaDollarSign, step: "03", title: copy.steps.keep.title, body: copy.steps.keep.body },
           ].map(({ icon: Icon, step, title, body }) => (
             <div key={step} className="flex items-start gap-4 bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
-              <div className="w-12 h-12 shrink-0 rounded-2xl bg-white/5 flex items-center justify-center text-[#22d3ee] border border-white/5">
+              <div className="w-12 h-12 shrink-0 rounded-2xl bg-white/5 flex items-center justify-center text-[var(--color-accent)] border border-white/5">
                 <Icon className="text-lg" />
               </div>
               <div>
@@ -306,7 +305,7 @@ export default function AppsStudio({ apiKey, locale = 'en' }) {
         {/* Footer Accent */}
         <div className="pt-24 pb-12 flex flex-col items-center gap-4">
           <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/5 rounded-full border border-white/5">
-            <span className="block w-1.5 h-1.5 rounded-full bg-[#22d3ee] animate-pulse" />
+            <span className="block w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-pulse" />
             <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">{copy.footer.moreComingSoon}</span>
           </div>
         </div>
@@ -318,7 +317,7 @@ export default function AppsStudio({ apiKey, locale = 'en' }) {
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedApp(null)} />
           <div className="relative bg-[#0a0a0a] border border-white/10 w-full max-w-md rounded-2xl p-8 space-y-8 animate-scale-up shadow-2xl">
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-20 h-20 rounded-[28px] bg-[#22d3ee]/10 border border-[#22d3ee]/20 flex items-center justify-center text-4xl text-[#22d3ee] mb-2">
+              <div className="w-20 h-20 rounded-[28px] bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-4xl text-[var(--color-accent)] mb-2">
                 <selectedApp.icon />
               </div>
               <h2 className="text-2xl font-black text-white uppercase tracking-tight">
@@ -338,7 +337,7 @@ export default function AppsStudio({ apiKey, locale = 'en' }) {
               <button
                 onClick={handleRequestAccess}
                 disabled={isRequesting}
-                className="w-full py-4 bg-[#22d3ee] text-black rounded-md text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#22d3ee]/90 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                className="w-full py-4 bg-[var(--color-accent)] text-black rounded-md text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[var(--color-accent)]/90 transition-all shadow-lg active:scale-95 disabled:opacity-50"
               >
                 {isRequesting ? copy.modal.sending : copy.modal.getTemplate}
               </button>

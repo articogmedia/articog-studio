@@ -171,8 +171,8 @@ export function GenerationCopyButtons({
           title={copiedKind === "text" ? "Prompt copied" : "Copy prompt"}
           aria-label={copiedKind === "text" ? "Prompt copied" : "Copy prompt"}
           onClick={(event) => runCopy(event, "text")}
-          className={`flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/60 backdrop-blur-md transition-all hover:bg-[#22d3ee] hover:text-black ${
-            copiedKind === "text" ? "text-[#22d3ee]" : "text-white"
+          className={`flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/60 backdrop-blur-md transition-all hover:bg-[var(--color-accent)] hover:text-black ${
+            copiedKind === "text" ? "text-[var(--color-accent)]" : "text-white"
           }`}
         >
           {copiedKind === "text" ? (
@@ -188,8 +188,8 @@ export function GenerationCopyButtons({
           title={copiedKind === "image" ? "Image copied" : "Copy image"}
           aria-label={copiedKind === "image" ? "Image copied" : "Copy image"}
           onClick={(event) => runCopy(event, "image")}
-          className={`flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/60 backdrop-blur-md transition-all hover:bg-[#22d3ee] hover:text-black ${
-            copiedKind === "image" ? "text-[#22d3ee]" : "text-white"
+          className={`flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/60 backdrop-blur-md transition-all hover:bg-[var(--color-accent)] hover:text-black ${
+            copiedKind === "image" ? "text-[var(--color-accent)]" : "text-white"
           }`}
         >
           {copiedKind === "image" ? (
@@ -350,7 +350,7 @@ export default function MobileGenerationActions({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 min-w-[178px] overflow-hidden rounded-xl border border-white/15 bg-[#151515]/95 p-1.5 shadow-2xl backdrop-blur-xl">
+        <div className="absolute right-0 top-12 z-50 min-w-[178px] overflow-hidden rounded-xl border border-white/15 bg-[#111111]/95 p-1.5 shadow-2xl backdrop-blur-xl">
           {availableActions.map((action) => (
             <button
               key={`${action.kind}-${action.label}`}

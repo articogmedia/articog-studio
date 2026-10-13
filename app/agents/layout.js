@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function AgentsLayout({ children }) {
   return (
-    <div className="h-screen w-full overflow-hidden bg-black">
+    <div className="agent-studio-theme h-screen w-full overflow-hidden bg-black">
       {children}
     </div>
   );

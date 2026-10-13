@@ -53,7 +53,7 @@ export function CameraControls(onChange) {
 
         const viewport = document.createElement('div');
         // Responsive height: h-[50vh] on mobile, h-[320px] on desktop
-        viewport.className = 'relative overflow-hidden w-full h-[40vh] md:h-[320px] bg-[#1a1a1a]/80 rounded-[2rem] border border-white/5 shadow-2xl backdrop-blur-xl transition-transform duration-300 hover:scale-[1.02] hover:border-white/10';
+        viewport.className = 'relative overflow-hidden w-full h-[40vh] md:h-[320px] bg-[#111111]/80 rounded-[2rem] border border-white/5 shadow-2xl backdrop-blur-xl transition-transform duration-300 hover:scale-[1.02] hover:border-white/10';
 
         const list = document.createElement('div');
         list.className = 'h-full overflow-y-auto no-scrollbar snap-y snap-mandatory relative z-10';
@@ -64,15 +64,15 @@ export function CameraControls(onChange) {
         list.appendChild(topSpacer);
 
         const topMask = document.createElement('div');
-        topMask.className = 'absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#1a1a1a] via-[#1a1a1a]/80 to-transparent z-20 pointer-events-none rounded-t-[2rem]';
+        topMask.className = 'absolute top-0 left-0 right-0 h-24 bg-black/70 z-20 pointer-events-none rounded-t-[2rem]';
         viewport.appendChild(topMask);
 
         const bottomMask = document.createElement('div');
-        bottomMask.className = 'absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/80 to-transparent z-20 pointer-events-none rounded-b-[2rem]';
+        bottomMask.className = 'absolute bottom-0 left-0 right-0 h-24 bg-black/70 z-20 pointer-events-none rounded-b-[2rem]';
         viewport.appendChild(bottomMask);
 
         const glow = document.createElement('div');
-        glow.className = 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5 h-[80px] bg-primary/5 blur-xl rounded-full pointer-events-none z-0';
+        glow.className = 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5 h-[80px] bg-white/[0.03] rounded-xl pointer-events-none z-0';
         viewport.appendChild(glow);
 
         // DRAG TO SCROLL LOGIC

@@ -136,7 +136,7 @@ function MediaPickerButton({
       className={promptMediaButtonClassName({
         active: uploadState === UPLOAD_STATE.READY,
         className: isDragging
-          ? "ring-2 ring-[#22d3ee] ring-offset-1 ring-offset-black scale-105"
+          ? "ring-2 ring-[var(--color-accent)] ring-offset-1 ring-offset-black scale-105"
           : "",
       })}
     >
@@ -956,7 +956,7 @@ export default function LipSyncStudio({
 
             <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-center px-4 flex flex-col items-center">
               <span className="text-white font-black uppercase text-xl sm:text-3xl tracking-wide mb-1 opacity-90">{copy.hero.titleLine1}</span>
-              <span className="text-[#22d3ee] font-black uppercase text-2xl sm:text-4xl sm:mt-1 tracking-tight">
+              <span className="text-[var(--color-accent)] font-black uppercase text-2xl sm:text-4xl sm:mt-1 tracking-tight">
                 {copy.hero.titleLine2}
               </span>
             </h1>
@@ -1015,7 +1015,7 @@ export default function LipSyncStudio({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
-                      className="text-white/40 group-hover:text-[#22d3ee] transition-colors"
+                      className="text-white/40 group-hover:text-[var(--color-accent)] transition-colors"
                     >
                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                       <circle cx="8.5" cy="8.5" r="1.5" />
@@ -1044,7 +1044,7 @@ export default function LipSyncStudio({
                   label={copy.media.videoLabel}
                   mediaCopy={copy.media}
                   icon={
-                    <VideoIcon className="text-white/40 group-hover:text-[#22d3ee] transition-colors" />
+                    <VideoIcon className="text-white/40 group-hover:text-[var(--color-accent)] transition-colors" />
                   }
                   onUpload={handleVideoPick}
                   onClear={() => {
@@ -1067,7 +1067,7 @@ export default function LipSyncStudio({
                 label={copy.media.audioLabel}
                 mediaCopy={copy.media}
                 icon={
-                  <MicIcon className="text-white/40 group-hover:text-[#22d3ee] transition-colors" />
+                  <MicIcon className="text-white/40 group-hover:text-[var(--color-accent)] transition-colors" />
                 }
                 onUpload={handleAudioPick}
                 onClear={() => {
@@ -1113,7 +1113,7 @@ export default function LipSyncStudio({
                     active: openDropdown === "model",
                   })}
                 >
-                  <div className="w-3.5 h-3.5 bg-[#22d3ee] rounded-sm flex items-center justify-center">
+                  <div className="w-3.5 h-3.5 bg-[var(--color-accent)] rounded-sm flex items-center justify-center">
                     <span className="text-[9px] font-black text-black">
                       S
                     </span>
@@ -1219,7 +1219,7 @@ export default function LipSyncStudio({
           />
         </div>
       )}
-      <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ duration: 5000, style: { background: '#18181b', color: '#ffffff', border: '1px solid rgba(255,255,255,0.15)', fontSize: '13px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.6)', maxWidth: '440px', wordBreak: 'break-word', whiteSpace: 'pre-wrap', padding: '12px 16px' } }} />
+      <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ duration: 5000, style: { background: '#111111', color: '#ffffff', border: '1px solid rgba(255,255,255,0.15)', fontSize: '13px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.6)', maxWidth: '440px', wordBreak: 'break-word', whiteSpace: 'pre-wrap', padding: '12px 16px' } }} />
     </div>
   );
 }

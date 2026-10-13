@@ -40,7 +40,7 @@
     left: 0;
     right: 0;
     padding: 0.5rem;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    background: rgba(0, 0, 0, 0.8);
     color: white;
     font-size: 0.75rem;
     font-weight: 600;

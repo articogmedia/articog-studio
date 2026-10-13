@@ -319,7 +319,7 @@ function HoverPill({ label, img, onClick }) {
           className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none"
           style={{ filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.6))" }}
         >
-          <div className="w-[72px] h-[72px] rounded-xl overflow-hidden border border-white/20 bg-[#1a1a1a]"
+          <div className="w-[72px] h-[72px] rounded-xl overflow-hidden border border-white/20 bg-[#111111]"
             style={{ transform: "rotate(-3deg)" }}>
             <img src={img} alt={label} className="w-full h-full object-cover" />
           </div>
@@ -550,7 +550,7 @@ export default function AiInfluencerStudio({
                         onError={(e) => { e.target.onerror = null; e.target.src = `${CDN}/character_type_human.webp`; }}
                       />
                       {/* Label overlay */}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-4 pb-1 px-1">
+                      <div className="absolute inset-x-0 bottom-0 bg-black/70 pt-4 pb-1 px-1">
                         <span className="text-[9px] font-semibold text-white leading-none">{opt.label}</span>
                       </div>
                       {/* Selected check badge */}
@@ -583,7 +583,7 @@ export default function AiInfluencerStudio({
                 onClick={() => setAspectRatio(r)}
                 className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
                   aspectRatio === r
-                    ? "bg-violet-600 text-white shadow-md shadow-violet-600/40"
+                    ? "bg-white text-black shadow-none"
                     : "text-gray-500 hover:text-white"
                 }`}
               >
@@ -608,8 +608,8 @@ export default function AiInfluencerStudio({
               disabled={isGenerating}
               className={`flex items-center gap-2 px-5 py-2 rounded-xl text-[13px] font-bold transition-all shadow-lg ${
                 isGenerating
-                  ? "bg-violet-600/40 text-white/60 cursor-not-allowed"
-                  : "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-violet-600/30 hover:shadow-violet-500/40"
+                  ? "bg-white/10 text-white/40 cursor-not-allowed"
+                  : "bg-white text-black hover:bg-white/90 shadow-none"
               }`}
             >
               {isGenerating ? (
@@ -630,12 +630,12 @@ export default function AiInfluencerStudio({
         {/* Preview area */}
         <div className="flex-1 flex items-center justify-center p-6 overflow-hidden">
           <div
-            className="relative rounded-2xl overflow-hidden bg-[#141414] border border-white/[0.07] shadow-2xl flex items-center justify-center"
+            className="relative rounded-2xl overflow-hidden bg-[#111111] border border-white/[0.07] shadow-2xl flex items-center justify-center"
             style={{ aspectRatio: arMap[aspectRatio] ?? "3/4", maxHeight: "100%", maxWidth: "100%" }}
           >
             {isGenerating ? (
               <div className="flex flex-col items-center gap-4 text-center px-8 py-12">
-                <div className="w-12 h-12 border-[3px] border-violet-500/20 border-t-violet-500 rounded-full animate-spin" />
+                <div className="w-12 h-12 border-[3px] border-white/20 border-t-violet-500 rounded-full animate-spin" />
                 <p className="text-sm text-gray-400 font-medium">{copy.preview.generating}</p>
               </div>
             ) : previewUrl ? (
@@ -707,7 +707,7 @@ export default function AiInfluencerStudio({
             value={customPrompt}
             onChange={(e) => setCustomPrompt(e.target.value)}
             placeholder={copy.customPrompt.placeholder}
-            className="w-full h-9 bg-[#161616] border border-white/[0.07] rounded-xl px-3 text-[12px] text-gray-200 placeholder-gray-600 outline-none focus:border-violet-500/40 transition-colors"
+            className="w-full h-9 bg-[#111111] border border-white/[0.07] rounded-xl px-3 text-[12px] text-gray-200 placeholder-gray-600 outline-none focus:border-white/40 transition-colors"
           />
         </div>
       </div>
@@ -742,7 +742,7 @@ export default function AiInfluencerStudio({
                 onKeyDown={(e) => e.key === "Enter" && setSelectedHistoryIdx(idx)}
                 className={`group relative w-full aspect-[3/4] rounded-xl overflow-hidden border transition-all cursor-pointer ${
                   selectedHistoryIdx === idx
-                    ? "border-violet-500 ring-1 ring-violet-500/40"
+                    ? "border-white/20 ring-1 ring-white/40"
                     : "border-white/[0.08] hover:border-white/20"
                 }`}
               >
@@ -787,7 +787,7 @@ export default function AiInfluencerStudio({
           )}
         </div>
       </div>
-      <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ duration: 5000, style: { background: '#18181b', color: '#ffffff', border: '1px solid rgba(255,255,255,0.15)', fontSize: '13px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.6)', maxWidth: '440px', wordBreak: 'break-word', whiteSpace: 'pre-wrap', padding: '12px 16px' } }} />
+      <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ duration: 5000, style: { background: '#111111', color: '#ffffff', border: '1px solid rgba(255,255,255,0.15)', fontSize: '13px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.6)', maxWidth: '440px', wordBreak: 'break-word', whiteSpace: 'pre-wrap', padding: '12px 16px' } }} />
     </div>
   );
 }

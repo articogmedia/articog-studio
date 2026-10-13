@@ -1,43 +1,50 @@
 :root {
-  /* Brand Colors */
-  --color-primary: #22d3ee;
-  /* Electric Cyan */
-  --color-primary-hover: #06b6d4;
-  --color-accent: #a855f7;
-  /* Creative Purple */
-  --color-accent-hover: #9333ea;
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  --color-primary: var(--color-accent);
+  --color-primary-hover: var(--color-accent-hover);
+  --color-accent: #ffffff;
+  --color-accent-hover: #e4e4e4;
+  --color-accent-muted: rgba(255,255,255,0.10);
+  --color-border: rgba(255,255,255,0.08);
+  --color-surface: rgba(255,255,255,0.03);
+  --color-surface-hover: rgba(255,255,255,0.05);
+  --color-muted: rgba(255,255,255,0.55);
+  --color-muted-foreground: rgba(255,255,255,0.38);
+  --color-field-placeholder: #a6a6a6;
+  --color-field-text: #e6e6e6;
   --color-danger: #ef4444;
 
   /* Backgrounds - Strict Dark Mode */
-  --bg-app: #050505;
+  --bg-app: var(--color-background);
   /* Deepest Black */
   --bg-panel: #0a0a0a;
   /* Panel Background */
-  --bg-card: #141414;
+  --bg-card: #111111;
   /* Card/Input Background */
   --bg-glass: rgba(10, 10, 10, 0.8);
 
   /* Text */
   --text-primary: #ffffff;
-  --text-secondary: #a1a1aa;
-  --text-muted: #52525b;
+  --text-secondary: var(--color-muted);
+  --text-muted: var(--color-muted-foreground);
 
   /* UI Elements */
-  --border-color: #27272a;
-  --border-light: rgba(255, 255, 255, 0.1);
+  --border-color: var(--color-border);
+  --border-light: var(--color-border);
 
-  --border-radius-sm: 6px;
-  --border-radius-md: 10px;
-  --border-radius-lg: 16px;
-  --border-radius-xl: 24px;
-  --border-radius-full: 9999px;
+  --border-radius-sm: 0.5rem;
+  --border-radius-md: 0.75rem;
+  --border-radius-lg: 1rem;
+  --border-radius-xl: 1.25rem;
+  --border-radius-full: 999px;
 
   /* Effects */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-  --shadow-glow: 0 0 20px rgba(176, 251, 93, 0.4);
-  --shadow-glow-accent: 0 0 20px rgba(168, 85, 247, 0.4);
+  --shadow-glow: none;
+  --shadow-glow-accent: none;
   --backdrop-blur: blur(20px);
 
   /* Transitions */
@@ -45,5 +52,5 @@
   --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Typography */
-  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family: 'Sora', sans-serif;
 }

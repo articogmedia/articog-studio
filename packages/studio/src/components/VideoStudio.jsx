@@ -146,7 +146,7 @@ function ReferenceMediaLabel({ label, required = false }) {
     >
       {label}
       {required && (
-        <span className="ml-0.5 text-[#22d3ee]" aria-hidden="true">
+        <span className="ml-0.5 text-[var(--color-accent)]" aria-hidden="true">
           *
         </span>
       )}
@@ -320,24 +320,24 @@ function ReferenceUploadButton({
                 fill="transparent"
                 strokeDasharray={88}
                 strokeDashoffset={88 - (88 * progress) / 100}
-                className="text-[#22d3ee] transition-all duration-300"
+                className="text-[var(--color-accent)] transition-all duration-300"
               />
             </svg>
-            <span className="absolute text-[9px] font-black text-[#22d3ee] leading-none">{progress}%</span>
+            <span className="absolute text-[9px] font-black text-[var(--color-accent)] leading-none">{progress}%</span>
           </div>
         ) : type === "video" ? (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-white/40 group-hover:text-[#22d3ee] transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-white/40 group-hover:text-[var(--color-accent)] transition-colors">
             <polygon points="23 7 16 12 23 17 23 7" />
             <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
           </svg>
         ) : type === "audio" ? (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-white/40 group-hover:text-[#22d3ee] transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-white/40 group-hover:text-[var(--color-accent)] transition-colors">
             <path d="M9 18V5l10-2v13" />
             <circle cx="6" cy="18" r="3" />
             <circle cx="16" cy="16" r="3" />
           </svg>
         ) : (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-white/40 group-hover:text-[#22d3ee] transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-white/40 group-hover:text-[var(--color-accent)] transition-colors">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
@@ -364,7 +364,7 @@ const CheckSvg = () => (
     height="16"
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#22d3ee"
+    stroke="var(--color-accent)"
     strokeWidth="4"
   >
     <polyline points="20 6 9 17 4 12" />
@@ -398,7 +398,7 @@ const VideoReadySvg = () => (
   >
     <polygon points="23 7 16 12 23 17 23 7" />
     <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-    <polyline points="7 10 10 13 15 8" stroke="#22d3ee" strokeWidth="2.5" />
+    <polyline points="7 10 10 13 15 8" stroke="var(--color-accent)" strokeWidth="2.5" />
   </svg>
 );
 
@@ -487,36 +487,36 @@ function ModelDropdown({ selectedModel, onSelect, onClose, copy = en }) {
   const getProviderStyle = (provider) => {
     switch (provider) {
       case "grok":
-        return { text: "xI", bg: "bg-orange-500/10 text-orange-400 border-orange-500/25" };
+        return { text: "xI", bg: "bg-white/10 text-white/70 border-white/25" };
       case "openai":
-        return { text: "O", bg: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" };
+        return { text: "O", bg: "bg-white/10 text-white/70 border-white/25" };
       case "google":
-        return { text: "G", bg: "bg-blue-500/10 text-blue-400 border-blue-500/25" };
+        return { text: "G", bg: "bg-white/10 text-white/70 border-white/25" };
       case "blackforest":
-        return { text: "BF", bg: "bg-amber-500/10 text-amber-400 border-amber-500/25" };
+        return { text: "BF", bg: "bg-white/10 text-white/70 border-white/25" };
       case "bytedance":
-        return { text: "BD", bg: "bg-purple-500/10 text-purple-400 border-purple-500/25" };
+        return { text: "BD", bg: "bg-white/10 text-white/70 border-white/25" };
       case "midjourney":
-        return { text: "MJ", bg: "bg-indigo-500/10 text-indigo-400 border-indigo-500/25" };
+        return { text: "MJ", bg: "bg-white/10 text-white/70 border-white/25" };
       case "kling":
-        return { text: "KL", bg: "bg-rose-500/10 text-rose-400 border-rose-500/25" };
+        return { text: "KL", bg: "bg-white/10 text-white/70 border-white/25" };
       case "vidu":
-        return { text: "VD", bg: "bg-cyan-500/10 text-cyan-400 border-cyan-500/25" };
+        return { text: "VD", bg: "bg-white/10 text-white/70 border-white/25" };
       case "minimax":
-        return { text: "MX", bg: "bg-pink-500/10 text-pink-400 border-pink-500/25" };
+        return { text: "MX", bg: "bg-white/10 text-white/70 border-white/25" };
       case "ideogram":
-        return { text: "ID", bg: "bg-yellow-500/10 text-yellow-400 border-yellow-500/25" };
+        return { text: "ID", bg: "bg-white/10 text-white/70 border-white/25" };
       case "luma":
-        return { text: "LM", bg: "bg-teal-500/10 text-teal-400 border-teal-500/25" };
+        return { text: "LM", bg: "bg-white/10 text-white/70 border-white/25" };
       case "alibaba":
-        return { text: "AL", bg: "bg-sky-500/10 text-sky-400 border-sky-500/25" };
+        return { text: "AL", bg: "bg-white/10 text-white/70 border-white/25" };
       case "leonardoai":
-        return { text: "LE", bg: "bg-violet-500/10 text-violet-400 border-violet-500/25" };
+        return { text: "LE", bg: "bg-white/10 text-white/70 border-white/25" };
       case "stability":
-        return { text: "SD", bg: "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/25" };
+        return { text: "SD", bg: "bg-white/10 text-white/70 border-white/25" };
       default:
         const name = provider ? provider.toUpperCase() : "AI";
-        return { text: name.substring(0, 2), bg: "bg-primary/10 text-primary border-primary/25" };
+        return { text: name.substring(0, 2), bg: "bg-white/10 text-white/70 border-white/25" };
     }
   };
 
@@ -559,9 +559,9 @@ function ModelDropdown({ selectedModel, onSelect, onClose, copy = en }) {
   }
 
   const getIconColor = (family) => {
-    if (family.id.includes("kling")) return "bg-blue-500/10 text-blue-400 border-blue-500/10";
-    if (family.id.includes("veo")) return "bg-purple-500/10 text-purple-400 border-purple-500/10";
-    if (family.id.includes("sora")) return "bg-rose-500/10 text-rose-400 border-rose-500/10";
+    if (family.id.includes("kling")) return "bg-white/10 text-white/70 border-white/10";
+    if (family.id.includes("veo")) return "bg-white/10 text-white/70 border-white/10";
+    if (family.id.includes("sora")) return "bg-white/10 text-white/70 border-white/10";
     return "bg-primary/10 text-primary border-primary/10";
   };
 
@@ -2702,7 +2702,7 @@ export default function VideoStudio({
 
             <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-center px-4 flex flex-col items-center">
               {!selectedTool && !selectedVeoTool && <span className="text-white font-black uppercase text-xl sm:text-3xl tracking-wide mb-1 opacity-90">{copy.empty.heading}</span>}
-              <span className="text-[#22d3ee] font-black uppercase text-2xl sm:text-4xl sm:mt-1 tracking-tight">
+              <span className="text-[var(--color-accent)] font-black uppercase text-2xl sm:text-4xl sm:mt-1 tracking-tight">
                 {selectedTool || selectedVeoTool || selectedPickerEntry?.groupedVideo ? selectedPickerLabel : selectedFamily.name}
               </span>
             </h1>
@@ -2941,7 +2941,7 @@ export default function VideoStudio({
                 <label className="flex min-w-0 items-center gap-3 text-xs text-white/70">
                   <span className="shrink-0">{copy.veo.sourceVideo}</span>
                   <select
-                    className="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#17191c] px-2 py-2 text-xs text-white"
+                    className="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#111111] px-2 py-2 text-xs text-white"
                     value={selectedVeoSource.requestId}
                     onChange={(event) => setSelectedVeoSourceId(event.target.value)}
                   >
@@ -3427,7 +3427,7 @@ export default function VideoStudio({
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2.5"
-                    className="opacity-40 text-white group-hover:text-[#22d3ee] transition-colors"
+                    className="opacity-40 text-white group-hover:text-[var(--color-accent)] transition-colors"
                   >
                     <path d="M12 20h9" />
                     <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
@@ -3495,7 +3495,7 @@ export default function VideoStudio({
         batchSize={1}
         onAddHistoryItem={handleDrawReference}
       />
-      <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ duration: 5000, style: { background: '#18181b', color: '#ffffff', border: '1px solid rgba(255,255,255,0.15)', fontSize: '13px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.6)', maxWidth: '440px', wordBreak: 'break-word', whiteSpace: 'pre-wrap', padding: '12px 16px' } }} />
+      <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ duration: 5000, style: { background: '#111111', color: '#ffffff', border: '1px solid rgba(255,255,255,0.15)', fontSize: '13px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.6)', maxWidth: '440px', wordBreak: 'break-word', whiteSpace: 'pre-wrap', padding: '12px 16px' } }} />
     </div>
   );
 }
