@@ -10,11 +10,7 @@ const { createBalanceHandler } = await import('../lib/supabase/balanceHandler.js
 const { shouldRefreshSupabaseSession } = await import('../lib/supabase/middlewarePolicy.js');
 const {
   completeProfileFromDraft,
-  createAuthCallbackUrl,
   createAuthCallbackHandler,
-  getAuthenticatedUser,
-  requestPasswordReset,
-  signInWithPassword,
 } = await import('../lib/supabase/auth.js');
 const { NextRequest, NextResponse } = await import('next/server.js');
 const { requireAuthenticatedGatewayUser } = await import('../lib/gateway/auth.js');
@@ -221,57 +217,6 @@ test('Supabase session refresh covers authenticated first-party APIs but not ups
   assert.equal(shouldRefreshSupabaseSession('/studio/image', false), true);
 });
 
-test('password sign-in uses the entered credentials without sending OTP email', async () => {
-  let signedIn;
-  const supabase = {
-    auth: {
-      signInWithPassword: async (credentials) => { signedIn = credentials; return { data: { user: { id: 'team-user' } }, error: null }; },
-    },
-  };
-
-  const result = await signInWithPassword(supabase, 'user@example.com', 'user-provided-password');
-
-  assert.deepEqual(signedIn, {
-    email: 'user@example.com',
-    password: 'user-provided-password',
-  });
-  assert.equal(result.data.user.id, 'team-user');
-});
-
-test('password recovery sends one explicit reset request to the production callback', async () => {
-  let recoveryRequest;
-  const supabase = {
-    auth: {
-      resetPasswordForEmail: async (...args) => { recoveryRequest = args; return { error: null }; },
-    },
-  };
-  const redirectTo = createAuthCallbackUrl('https://beta.articog.in', '/login/reset-password');
-
-  await requestPasswordReset(supabase, 'user@example.com', redirectTo);
-
-  assert.equal(redirectTo, 'https://beta.articog.in/auth/callback?next=%2Flogin%2Freset-password');
-  assert.deepEqual(recoveryRequest, ['user@example.com', { redirectTo }]);
-});
-
-test('signed-out browser sessions proceed to login while other user verification errors propagate', async () => {
-  const signedOut = await getAuthenticatedUser({
-    auth: { getUser: async () => ({ data: { user: null }, error: { name: 'AuthSessionMissingError' } }) },
-  });
-  assert.equal(signedOut, null);
-
-  const user = { id: 'verified-user', email: 'user@example.com' };
-  assert.equal(await getAuthenticatedUser({
-    auth: { getUser: async () => ({ data: { user }, error: null }) },
-  }), user);
-
-  await assert.rejects(
-    getAuthenticatedUser({
-      auth: { getUser: async () => ({ data: { user: null }, error: new Error('Auth service unavailable') }) },
-    }),
-    /Auth service unavailable/,
-  );
-});
-
 test('successful auth callback exchanges the code and persists session cookies on its studio redirect', async () => {
   let exchangedCode;
   const callback = createAuthCallbackHandler({
@@ -330,21 +275,21 @@ test('expired auth callback redirects to the access screen with a visible error 
   assert.equal(loggedError, 'AuthApiError');
 });
 
-test('auth callback allows the password reset destination but rejects arbitrary redirects', async () => {
+test('auth callback ignores client-supplied redirect destinations', async () => {
   const callback = createAuthCallbackHandler({
     createServerClient: () => ({ auth: { exchangeCodeForSession: async () => ({ error: null }) } }),
     createRedirect: (url) => NextResponse.redirect(url),
     getConfig: () => ({ url: 'https://project.supabase.co', key: 'publishable-key' }),
   });
 
-  const recovery = await callback(new NextRequest(
+  const suppliedRedirect = await callback(new NextRequest(
     'https://beta.articog.in/auth/callback?code=recovery-code&next=%2Flogin%2Freset-password',
   ));
   const untrusted = await callback(new NextRequest(
     'https://beta.articog.in/auth/callback?code=login-code&next=https%3A%2F%2Fevil.example',
   ));
 
-  assert.equal(recovery.headers.get('location'), 'https://beta.articog.in/login/reset-password');
+  assert.equal(suppliedRedirect.headers.get('location'), 'https://beta.articog.in/studio');
   assert.equal(untrusted.headers.get('location'), 'https://beta.articog.in/studio');
 });
 

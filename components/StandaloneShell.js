@@ -191,7 +191,6 @@ export default function StandaloneShell({ locale = 'en' }) {
   
   const [apiKey, setApiKey] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [authError, setAuthError] = useState(null);
   const [activeTab, setActiveTab] = useState(getInitialTab());
 
   const [balance, setBalance] = useState(null);
@@ -397,16 +396,6 @@ export default function StandaloneShell({ locale = 'en' }) {
   };
 
   useEffect(() => {
-    const currentUrl = new URL(window.location.href);
-    const callbackError = currentUrl.searchParams.get('auth_error');
-    if (callbackError) {
-      setAuthError('That sign-in link could not be used. Request a new link and open it before it expires.');
-      currentUrl.searchParams.delete('auth_error');
-      window.history.replaceState(null, '', currentUrl);
-    }
-  }, []);
-
-  useEffect(() => {
     let isCurrent = true;
     const storedProfile = readStoredAccessProfile();
     setProfile(storedProfile);
@@ -570,7 +559,6 @@ export default function StandaloneShell({ locale = 'en' }) {
     return (
       <ArticogAccessScreen
         initialProfile={profile}
-        authError={authError}
         onComplete={handleAccessComplete}
       />
     );
