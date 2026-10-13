@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { ImageStudio, VideoStudio, CinemaStudio, getUserBalance, INTERNAL_SESSION_KEY } from 'studio';
+import { ImageStudio, VideoStudio, CinemaStudio, AudioStudio, AppsStudio, AiInfluencerStudio, getUserBalance, INTERNAL_SESSION_KEY } from 'studio';
 import axios from 'axios';
 import ArticogAccessScreen from './ArticogAccessScreen';
 import ArticogLogo from './ArticogLogo';
@@ -51,6 +51,38 @@ const TABS = [
         <line x1="17" y1="7" x2="22" y2="7"/>
       </svg>
     )
+  },
+  {
+    id: 'ai-influencer',
+    label: 'AI Influencer Studio',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      </svg>
+    )
+  },
+  {
+    id: 'audio',
+    label: 'Audio Studio',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 18V5l12-2v13"/>
+        <circle cx="6" cy="18" r="3"/>
+        <circle cx="18" cy="16" r="3"/>
+      </svg>
+    )
+  },
+  {
+    id: 'apps',
+    label: 'Explore Apps',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="7" height="7"/>
+        <rect x="14" y="3" width="7" height="7"/>
+        <rect x="14" y="14" width="7" height="7"/>
+        <rect x="3" y="14" width="7" height="7"/>
+      </svg>
+    )
   }
 ];
 
@@ -58,7 +90,7 @@ const NAVIGATION_CATEGORIES = [
   {
     id: 'images',
     label: 'Images',
-    tabIds: ['image', 'cinema'],
+    tabIds: ['image', 'cinema', 'ai-influencer'],
     icon: (
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -79,7 +111,21 @@ const NAVIGATION_CATEGORIES = [
       </svg>
     )
   },
+  {
+    id: 'audio',
+    label: 'Audio',
+    tabIds: ['audio'],
+    icon: (
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 18V5l12-2v13"/>
+        <circle cx="6" cy="18" r="3"/>
+        <circle cx="18" cy="16" r="3"/>
+      </svg>
+    )
+  },
 ];
+
+const EXPLORE_APPS_TAB = TABS.find((tab) => tab.id === 'apps');
 
 const getNavigationCategory = (tabId) => (
   NAVIGATION_CATEGORIES.find((category) => category.tabIds.includes(tabId))
@@ -167,6 +213,26 @@ export default function StandaloneShell({ locale = 'en' }) {
       return next;
     });
   }, []);
+
+  const handleCategoryToggle = useCallback((categoryId) => {
+    const isCollapsedNavigation = isSidebarCollapsed && !isMobileOpen;
+
+    if (!isCollapsedNavigation) {
+      setExpandedCategoryId((currentId) => (
+        currentId === categoryId ? null : categoryId
+      ));
+      return;
+    }
+
+    setExpandedCategoryId(categoryId);
+    toggleSidebar();
+  }, [isMobileOpen, isSidebarCollapsed, toggleSidebar]);
+
+  useEffect(() => {
+    if (activeCategory?.id) {
+      setExpandedCategoryId(activeCategory.id);
+    }
+  }, [activeCategory?.id]);
 
   // Global generation notifications remain mounted while users switch studios.
   const [notifications, setNotifications] = useState([]);
@@ -513,7 +579,7 @@ export default function StandaloneShell({ locale = 'en' }) {
       isFileDrag &&
       e.dataTransfer.items &&
       e.dataTransfer.items.length > 0 &&
-      (activeTab === 'image' || activeTab === 'video')
+      (activeTab === 'image' || activeTab === 'video' || activeTab === 'audio')
     ) {
       setIsDragging(true);
     }
@@ -533,7 +599,7 @@ export default function StandaloneShell({ locale = 'en' }) {
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0 && (activeTab === 'image' || activeTab === 'video')) {
+    if (files.length > 0 && (activeTab === 'image' || activeTab === 'video' || activeTab === 'audio')) {
       setDroppedFiles(files);
     }
   }, [activeTab]);
@@ -789,6 +855,36 @@ export default function StandaloneShell({ locale = 'en' }) {
                 })}
               </div>
 
+              {EXPLORE_APPS_TAB && (
+                <div className="mt-3 pt-3 border-t border-white/[0.07]">
+                  <a
+                    href={studioPath(EXPLORE_APPS_TAB.id)}
+                    onClick={(event) => handleNavigationItemClick(event, EXPLORE_APPS_TAB.id)}
+                    aria-current={activeTab === EXPLORE_APPS_TAB.id ? 'page' : undefined}
+                    aria-label={tabLabel(EXPLORE_APPS_TAB.id)}
+                    title={isSidebarCollapsed && !isMobileOpen ? tabLabel(EXPLORE_APPS_TAB.id) : undefined}
+                    className={`
+                      group relative flex items-center rounded-xl transition-all duration-150 text-[13px] font-semibold
+                      ${isSidebarCollapsed && !isMobileOpen ? 'h-10 w-10 justify-center mx-auto' : 'h-10 px-3 w-full gap-3'}
+                      ${activeTab === EXPLORE_APPS_TAB.id
+                        ? 'bg-white/[0.05] text-white border border-white/[0.08]'
+                        : 'text-white/55 hover:text-white hover:bg-white/[0.05] border border-transparent'
+                      }
+                    `}
+                  >
+                    {activeTab === EXPLORE_APPS_TAB.id && (
+                      <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-white rounded-r-full" />
+                    )}
+                    <span className={`flex-shrink-0 [&_svg]:h-4 [&_svg]:w-4 ${activeTab === EXPLORE_APPS_TAB.id ? 'text-white' : 'text-white/50 group-hover:text-white'}`}>
+                      {EXPLORE_APPS_TAB.icon}
+                    </span>
+                    {(!isSidebarCollapsed || isMobileOpen) && (
+                      <span className="truncate">{tabLabel(EXPLORE_APPS_TAB.id)}</span>
+                    )}
+                  </a>
+                </div>
+              )}
+
             </nav>
         </aside>
 
@@ -802,6 +898,22 @@ export default function StandaloneShell({ locale = 'en' }) {
         </div>
         <div className={activeTab === 'cinema' ? "h-full w-full" : "hidden"}>
           <CinemaStudio apiKey={apiKey} locale={locale} onGenerationStart={makeGenerationStartCallback('cinema')} onGenerationEnd={makeGenerationEndCallback('cinema')} onGenerationComplete={makeSuccessCallback('cinema')} onGenerationError={makeErrorCallback('cinema')} />
+        </div>
+        <div className={activeTab === 'audio' ? "h-full w-full" : "hidden"}>
+          <AudioStudio apiKey={apiKey} locale={locale} droppedFiles={activeTab === 'audio' ? droppedFiles : null} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('audio')} onGenerationEnd={makeGenerationEndCallback('audio')} onGenerationComplete={makeSuccessCallback('audio')} onGenerationError={makeErrorCallback('audio')} />
+        </div>
+        <div className={activeTab === 'apps' ? "h-full w-full" : "hidden"}>
+          <AppsStudio apiKey={apiKey} locale={locale} />
+        </div>
+        <div className={activeTab === 'ai-influencer' ? "h-full w-full" : "hidden"}>
+          <AiInfluencerStudio
+            apiKey={apiKey}
+            locale={locale}
+            onGenerationStart={makeGenerationStartCallback('ai-influencer')}
+            onGenerationEnd={makeGenerationEndCallback('ai-influencer')}
+            onGenerationComplete={makeSuccessCallback('ai-influencer')}
+            onGenerationError={makeErrorCallback('ai-influencer')}
+          />
         </div>
       </div>
     </div>

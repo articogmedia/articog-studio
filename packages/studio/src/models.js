@@ -76,6 +76,8 @@ const GATEWAY_MODEL_ENDPOINTS = new Set([
   'nano-banana-2-edit',
   'nano-banana-pro',
   'nano-banana-pro-edit',
+  'seedream-5.0-pro',
+  'seedream-5.0-pro-edit',
   'gpt-image-2.5-flare-text-to-image',
   'gpt-image-2.5-flare-image-to-image',
   'gpt-image-2.5-sunburst-text-to-image',

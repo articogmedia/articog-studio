@@ -7,6 +7,7 @@ await new Promise((resolve) => process.nextTick(resolve));
 
 const { MODEL_REGISTRY, getProviderByName } = await import('../lib/gateway/registry.js');
 const { getEntry, start } = await import('../lib/gateway/providers/seedream.js');
+const { t2iModels, i2iModels } = await import('../packages/studio/src/models.js');
 
 const originalFetch = globalThis.fetch;
 const originalApiKey = process.env.ARK_API_KEY;
@@ -34,6 +35,9 @@ test('all UI Seedream endpoints are registered with their ModelArk models', () =
     assert.deepEqual(MODEL_REGISTRY[endpoint], entry);
     assert.deepEqual(getEntry(endpoint), entry);
   }
+  assert.ok(t2iModels.some((model) => model.endpoint === 'seedream-5.0-pro'));
+  assert.ok(i2iModels.some((model) => model.endpoint === 'seedream-5.0-pro-edit'));
+  assert.equal(t2iModels[0].id, 'nano-banana-pro');
   assert.equal(getEntry('seedream-5.0-flash-layerize'), null);
   assert.equal(getProviderByName('seedream')?.start, start);
 });
