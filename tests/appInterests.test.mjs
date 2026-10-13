@@ -7,6 +7,7 @@ await new Promise((resolve) => process.nextTick(resolve));
 
 const { createAppInterestsHandlers } = await import('../lib/supabase/appInterestsHandlers.js');
 const { createBalanceHandler } = await import('../lib/supabase/balanceHandler.js');
+const { shouldRefreshSupabaseSession } = await import('../lib/supabase/middlewarePolicy.js');
 const { getForwardableApiKey, INTERNAL_SESSION_KEY, stripInternalSessionCredential } = await import('../lib/muapi/auth.js');
 const { getAppInterests, getUserBalance, registerAppInterest } = await import('../packages/studio/src/muapi.js');
 
@@ -179,4 +180,13 @@ test('proxy credential filtering rejects the internal sentinel for every Bearer 
   stripInternalSessionCredential(byokHeaders);
   assert.equal(byokHeaders.get('x-api-key'), 'muapi-byok-key');
   assert.equal(byokHeaders.get('authorization'), 'Bearer muapi-bearer-key');
+});
+
+test('Supabase session refresh covers authenticated first-party APIs but not upstream MuAPI rewrites', () => {
+  assert.equal(shouldRefreshSupabaseSession('/api/v1/account/balance', true), true);
+  assert.equal(shouldRefreshSupabaseSession('/api/app/interests', true), true);
+  assert.equal(shouldRefreshSupabaseSession('/api/v1/seedream-5.0-pro', true), true);
+  assert.equal(shouldRefreshSupabaseSession('/api/v1/seedream-5.0-pro', false), false);
+  assert.equal(shouldRefreshSupabaseSession('/api/v1/account/balance', false), true);
+  assert.equal(shouldRefreshSupabaseSession('/studio/image', false), true);
 });

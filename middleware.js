@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { getLocaleFromPathname } from './lib/locales';
 import { stripInternalSessionCredential } from './lib/muapi/auth';
+import { isDedicatedApiRoute, shouldRefreshSupabaseSession } from './lib/supabase/middlewarePolicy';
 
 function addSecurityHeaders(response) {
     // Prevent MIME type sniffing (CWE-693)
@@ -29,7 +30,8 @@ export async function middleware(request) {
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-    if (supabaseUrl && supabaseKey && !url.pathname.startsWith('/api/')) {
+    const useOwnGateway = process.env.NEXT_PUBLIC_USE_OWN_GATEWAY === 'true';
+    if (supabaseUrl && supabaseKey && shouldRefreshSupabaseSession(url.pathname, useOwnGateway)) {
         const supabase = createServerClient(supabaseUrl, supabaseKey, {
             cookies: {
                 getAll: () => request.cookies.getAll(),
@@ -53,15 +55,9 @@ export async function middleware(request) {
 
     if (isMuApi) {
         // Exclude paths that have their own dedicated route handlers with custom logic
-        const isHandledByRoute = url.pathname.startsWith('/api/v1/creative-agent') ||
-                                url.pathname.startsWith('/api/v1/account/balance') ||
-                                url.pathname.startsWith('/api/v1/predictions/') ||
-                                url.pathname.startsWith('/api/v1/upload_url') ||
-                                url.pathname.startsWith('/api/v1/upload_file') ||
-                                url.pathname.startsWith('/api/v1/get_upload_url') ||
-                                url.pathname.startsWith('/api/v1/upload-binary');
+        const isHandledByRoute = isDedicatedApiRoute(url.pathname);
 
-        if (process.env.NEXT_PUBLIC_USE_OWN_GATEWAY !== 'true' && url.pathname.startsWith('/api/v1') && !isHandledByRoute) {
+        if (!useOwnGateway && url.pathname.startsWith('/api/v1') && !isHandledByRoute) {
             const targetUrl = new URL(url.pathname + url.search, 'https://api.muapi.ai');
             const requestHeaders = stripInternalSessionCredential(new Headers(request.headers));
             const rewriteResponse = NextResponse.rewrite(targetUrl, { request: { headers: requestHeaders } });
