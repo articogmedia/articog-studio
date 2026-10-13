@@ -9,6 +9,8 @@ const { createAppInterestsHandlers } = await import('../lib/supabase/appInterest
 const { createBalanceHandler } = await import('../lib/supabase/balanceHandler.js');
 const { shouldRefreshSupabaseSession } = await import('../lib/supabase/middlewarePolicy.js');
 const { requireAuthenticatedGatewayUser } = await import('../lib/gateway/auth.js');
+const { saveArticogProfile } = await import('../lib/supabase/profileClient.js');
+const { requestEmailSignInLink } = await import('../lib/supabase/signIn.js');
 const {
   ACCESS_PROFILE_STORAGE_KEY,
   clearStoredAccessProfile,
@@ -252,4 +254,41 @@ test('internal session marker is not sent as a generation API credential', async
   assert.equal(request.init.headers['x-api-key'], undefined);
   assert.equal(request.init.headers['Content-Type'], 'application/json');
   assert.equal(request.init.credentials, 'same-origin');
+});
+
+test('profile completion posts with same-origin cookies and rejects unauthenticated saves', async () => {
+  const profile = { fullName: 'Studio User', email: 'user@example.com' };
+  let requestInit;
+
+  await assert.rejects(
+    saveArticogProfile(profile, async (_url, init) => {
+      requestInit = init;
+      return Response.json({ detail: 'Sign in to continue.' }, { status: 401 });
+    }),
+    /Sign in to continue/,
+  );
+  assert.equal(requestInit.credentials, 'same-origin');
+  assert.equal(requestInit.method, 'POST');
+
+  const result = await saveArticogProfile(profile, async () => (
+    Response.json({ complete: true, profile: { ...profile, company: '' } })
+  ));
+  assert.deepEqual(result, { ...profile, company: '' });
+});
+
+test('name-and-email sign-in requests a Supabase link back to the callback without creating accounts', async () => {
+  let request;
+  const message = await requestEmailSignInLink({
+    auth: {
+      signInWithOtp: async (options) => {
+        request = options;
+        return { error: null };
+      },
+    },
+  }, 'user@example.com', 'https://articog-studio.vercel.app');
+
+  assert.equal(request.email, 'user@example.com');
+  assert.equal(request.options.emailRedirectTo, 'https://articog-studio.vercel.app/auth/callback');
+  assert.equal(request.options.shouldCreateUser, false);
+  assert.match(message, /Open it in this browser/);
 });
