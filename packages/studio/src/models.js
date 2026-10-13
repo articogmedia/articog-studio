@@ -69,6 +69,32 @@ function isSupportedSeedance25Model(model) {
   return !/^seedance-2\.5-.+-4k$/.test(model.id);
 }
 
+// Mirror the endpoint keys in lib/gateway/registry.js without importing its
+// server-only providers into the browser bundle.
+const GATEWAY_MODEL_ENDPOINTS = new Set([
+  'nano-banana-2',
+  'nano-banana-2-edit',
+  'nano-banana-pro',
+  'nano-banana-pro-edit',
+  'gpt-image-2.5-flare-text-to-image',
+  'gpt-image-2.5-flare-image-to-image',
+  'gpt-image-2.5-sunburst-text-to-image',
+  'gpt-image-2.5-sunburst-image-to-image',
+  'seedance-v2.0-t2v',
+  'seedance-2-first-last-frame',
+  'seedance-2.0-omni-reference',
+]);
+
+for (const profile of ['', 'intl-', 'spicy-']) {
+  for (const workflow of ['text-to-video', 'image-to-video', 'first-last-frame', 'omni-reference']) {
+    for (const resolution of ['', '-480p', '-1080p']) {
+      GATEWAY_MODEL_ENDPOINTS.add(`seedance-2.5-${profile}${workflow}${resolution}`);
+    }
+  }
+}
+
+const isGatewaySupportedModel = (model) => GATEWAY_MODEL_ENDPOINTS.has(model.endpoint);
+
 const GROK_ASPECT_RATIO_INPUT = Object.freeze({
   type: "string", title: "Aspect Ratio", name: "aspect_ratio",
   enum: Object.freeze(["9:16", "16:9", "2:3", "3:2", "1:1"]),
@@ -232,7 +258,7 @@ const LTX_GENERATE_AUDIO_INPUT = Object.freeze({
   description: "Whether to generate audio.", default: true,
 });
 
-export const t2iModels = [
+const ALL_T2I = [
   {
     "id": "nano-banana",
     "name": "Nano Banana",
@@ -4397,6 +4423,8 @@ export const t2iModels = [
   }
 ];
 
+export const t2iModels = ALL_T2I.filter(isGatewaySupportedModel);
+
 export const getModelById = (id) => t2iModels.find(m => m.id === id);
 
 export const getSelectableAspectRatiosForModel = (modelId) => {
@@ -4416,7 +4444,7 @@ export const getAspectRatiosForModel = (modelId) => {
 // ==========================================
 // Text-to-Video Models
 // ==========================================
-export const t2vModels = [
+const ALL_T2V = [
   {
     "id": "seedance-lite-t2v",
     "name": "Seedance 1.0 Lite",
@@ -10196,6 +10224,8 @@ export const t2vModels = [
   }
 ].filter(isSupportedSeedance25Model);
 
+export const t2vModels = ALL_T2V.filter(isGatewaySupportedModel);
+
 export const getVideoModelById = (id) => t2vModels.find(m => m.id === id);
 
 const getDependentEnumValues = (input, selections = {}) => {
@@ -10252,7 +10282,7 @@ export const getResolutionsForVideoModel = (modelId, selections = {}) => {
   return [];
 };
 // Auto-generated from schema_data.json — Image to Image models
-export const i2iModels = [
+const ALL_I2I = [
   {
     "id": "ai-image-upscaler",
     "name": "AI Image Upscaler",
@@ -14762,8 +14792,10 @@ export const i2iModels = [
   }
 ];
 
+export const i2iModels = ALL_I2I.filter(isGatewaySupportedModel);
+
 // Auto-generated from schema_data.json — Image to Video models
-export const i2vModels = [
+const ALL_I2V = [
   {
     "id": "ai-video-effects",
     "name": "AI Video Effects",
@@ -27233,6 +27265,8 @@ export const i2vModels = [
   }
 ].filter(isSupportedSeedance25Model);
 
+export const i2vModels = ALL_I2V.filter(isGatewaySupportedModel);
+
 export const getI2IModelById = (id) => i2iModels.find(m => m.id === id);
 export const getI2VModelById = (id) => i2vModels.find(m => m.id === id);
 
@@ -27338,7 +27372,7 @@ export const getMaxImagesForI2IModel = (modelId) => {
 };
 
 // ─── Video-to-Video models ────────────────────────────────────────────────────
-export const v2vModels = [
+const ALL_V2V = [
   {
     "id": "video-watermark-remover",
     "name": "AI Video Watermark Remover",
@@ -31279,10 +31313,13 @@ export const v2vModels = [
   }
 ].filter(isSupportedSeedance25Model);
 
+void ALL_V2V;
+export const v2vModels = [];
+
 // ─── LipSync / Speech-to-Video models ────────────────────────────────────────
 // Image-based: portrait image + audio → talking video
 // Video-based: existing video + audio → lipsync video
-export const lipsyncModels = [
+const ALL_LIPSYNC = [
   // ── Image + Audio → Video ──────────────────────────────────────────────────
   {
     "id": "infinitetalk-image-to-video",
@@ -31495,6 +31532,9 @@ export const lipsyncModels = [
   }
 ];
 
+void ALL_LIPSYNC;
+export const lipsyncModels = [];
+
 export const getLipSyncModelById = (id) => lipsyncModels.find(m => m.id === id);
 
 export const getResolutionsForLipSyncModel = (id) => {
@@ -31510,7 +31550,7 @@ export const getV2VModelById = (id) => v2vModels.find(m => m.id === id);
 // ─── Recast / Body Swap models ───────────────────────────────────────────────
 // Source video (the performance / motion) + character image (the new identity)
 // → a video of the new character performing the source video's motion.
-export const recastModels = [
+const ALL_RECAST = [
   {
     "id": "kling-v3.0-pro-recast",
     "name": "Kling 3.0 Pro Motion Control",
@@ -31553,6 +31593,9 @@ export const recastModels = [
   }
 ];
 
+void ALL_RECAST;
+export const recastModels = [];
+
 export const getRecastModelById = (id) => recastModels.find(m => m.id === id);
 
 export const getAspectRatiosForRecastModel = (id) => {
@@ -31561,7 +31604,7 @@ export const getAspectRatiosForRecastModel = (id) => {
 };
 
 // ─── Motion Control Models (Seedance) ───────────────────────────────────────────────
-export const motionControlModels = [
+const ALL_MOTION_CONTROL = [
   {
     id: "seedance-2.5-motion-control",
     name: "Seedance 2.5 Motion Control",
@@ -31647,6 +31690,9 @@ export const motionControlModels = [
     "defaultAspectRatio": "16:9"
   }
 ];
+
+void ALL_MOTION_CONTROL;
+export const motionControlModels = [];
 
 export const getMotionControlModelById = (id) => motionControlModels.find(m => m.id === id) || motionControlModels[0];
 export const getAspectRatiosForMotionControlModel = (id) => {

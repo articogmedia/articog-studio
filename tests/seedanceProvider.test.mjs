@@ -43,8 +43,10 @@ test('video picker hides only unsupported Seedance 2.5 4K entries', () => {
   assert.equal(videoModels.some((model) => /^seedance-2\.5-.+-4k$/.test(model.id)), false);
   assert.ok(t2vModels.some((model) => model.id === 'seedance-2.5-text-to-video-1080p'));
   assert.ok(i2vModels.some((model) => model.id === 'seedance-2.5-image-to-video-1080p'));
-  assert.ok(v2vModels.some((model) => model.id === 'seedance-2.5-video-edit'));
-  assert.ok(t2vModels.some((model) => model.id === 'seedance-2-vip-text-to-video-4k'));
+  assert.deepEqual(v2vModels, []);
+  for (const model of [...t2vModels, ...i2vModels].filter((item) => item.id.startsWith('seedance'))) {
+    assert.ok(MODEL_REGISTRY[model.endpoint || model.id], `Missing gateway registry entry for Seedance model ${model.id}`);
+  }
 });
 
 test('start constructs the ModelArk task request and supports both runner contracts', async () => {
