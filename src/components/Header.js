@@ -15,15 +15,12 @@ export function Header(navigate) {
 
     // Logo
     const logoContainer = document.createElement('div');
-    logoContainer.className = 'cursor-pointer hover:scale-110 transition-transform';
+    logoContainer.className = 'cursor-pointer hover:scale-110 transition-transform flex items-center gap-2';
     logoContainer.innerHTML = `
-        <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center p-1.5 shadow-lg">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="black"/>
-                <path d="M2 17L12 22L22 17" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M2 12L12 17L22 12" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+        <div class="h-8 aspect-[4/1] overflow-hidden shrink-0">
+            <img src="./articog-logo.png" alt="Articog" class="w-full h-full object-cover">
         </div>
+        <span class="hidden sm:block text-white/55 text-sm font-normal">Studio</span>
     `;
 
     const menu = document.createElement('nav');

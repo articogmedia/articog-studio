@@ -739,13 +739,11 @@ export default function StandaloneShell({ locale = 'en' }) {
 
             {/* Logo & Title */}
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-[var(--color-accent)] rounded-lg flex items-center justify-center shadow-lg shadow-[var(--color-accent)]/20">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                </svg>
+              <div className="h-8 aspect-[4/1] overflow-hidden shrink-0">
+                <img src="/articog-logo.png" alt="Articog" className="w-full h-full object-cover" />
               </div>
-              <span className="text-sm font-bold tracking-tight hidden sm:block text-white">
-                {copy.shell.brand}
+              <span className="hidden sm:block text-white/55 text-sm font-normal">
+                Studio
               </span>
             </div>
           </div>
