@@ -8,8 +8,6 @@ import ArticogAccessScreen from './ArticogAccessScreen';
 import ArticogLogo from './ArticogLogo';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { saveArticogProfile } from '@/lib/supabase/profileClient';
-import { requestEmailSignInLink } from '@/lib/supabase/signIn';
-import { clearTeamDemoSession, createTeamDemoSession } from '@/lib/supabase/teamDemoClient';
 import {
   clearStoredAccessProfile,
   readStoredAccessProfile,
@@ -530,25 +528,7 @@ export default function StandaloneShell({ locale = 'en' }) {
     const localProfile = saveStoredAccessProfile(savedProfile);
     setProfile(localProfile);
     if (!profileAuthenticated) {
-      if (savedProfile.teamAccessCode?.trim()) {
-        await createTeamDemoSession(savedProfile.teamAccessCode);
-        const response = await fetch('/api/profile', { cache: 'no-store', credentials: 'same-origin' });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result.authenticated || !result.profile) {
-          throw new Error(result.detail || 'Temporary team access could not be verified.');
-        }
-
-        setProfileAuthenticated(true);
-        setProfile(result.profile);
-        if (result.complete === true) {
-          clearStoredAccessProfile();
-          setApiKey(INTERNAL_SESSION_KEY);
-          void fetchBalance(INTERNAL_SESSION_KEY);
-          return;
-        }
-        return 'Team access verified. Continue to save your profile.';
-      }
-      return requestEmailSignInLink(supabaseBrowser(), localProfile.email, window.location.origin);
+      return 'Your details are saved in this browser. Demo access requires an authorized Vercel team session.';
     }
 
     const persistedProfile = await saveArticogProfile(savedProfile);
@@ -559,7 +539,6 @@ export default function StandaloneShell({ locale = 'en' }) {
   }, [fetchBalance, profileAuthenticated]);
 
   const handleSignOut = useCallback(async () => {
-    await clearTeamDemoSession().catch(() => {});
     try {
       const supabase = supabaseBrowser();
       const { error } = await supabase.auth.signOut();

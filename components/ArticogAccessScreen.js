@@ -8,7 +8,6 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function ArticogAccessScreen({ initialProfile, accessError, onComplete }) {
   const [fullName, setFullName] = useState(initialProfile?.fullName || '');
   const [email, setEmail] = useState(initialProfile?.email || '');
-  const [teamAccessCode, setTeamAccessCode] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
@@ -31,10 +30,9 @@ export default function ArticogAccessScreen({ initialProfile, accessError, onCom
 
     setIsSubmitting(true);
     try {
-      const result = await onComplete({ fullName: trimmedName, email: normalizedEmail, teamAccessCode });
+      const result = await onComplete({ fullName: trimmedName, email: normalizedEmail });
       if (typeof result === 'string') {
         setStatusMessage(result);
-        setTeamAccessCode('');
       }
       setIsSubmitting(false);
     } catch (error) {
@@ -95,21 +93,6 @@ export default function ArticogAccessScreen({ initialProfile, accessError, onCom
               className={fieldClass('email')}
             />
             {errors.email && <p id="access-email-error" className="mt-1.5 text-xs text-rose-300">{errors.email}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="access-team-code" className="text-[13px] font-medium text-white/85">Team access code <span className="text-white/40">(optional)</span></label>
-            <input
-              id="access-team-code"
-              name="team-access-code"
-              autoComplete="off"
-              type="password"
-              maxLength={512}
-              value={teamAccessCode}
-              onChange={(event) => setTeamAccessCode(event.target.value)}
-              placeholder="Use your team demo code"
-              className={fieldClass('teamAccessCode')}
-            />
           </div>
 
           <button
