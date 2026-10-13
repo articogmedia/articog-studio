@@ -1,14 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
-import { ImageStudio, VideoStudio, ClippingStudio, MotionControlStudio, VibeMotionStudio, LipSyncStudio, RecastStudio, CinemaStudio, AudioStudio, MarketingStudio, WorkflowStudio, AgentStudio, AppsStudio, AiInfluencerStudio, LayersStudio, getUserBalance, INTERNAL_SESSION_KEY } from 'studio';
-
-const DesignAgentStudio = dynamic(() => import('studio').then(mod => mod.DesignAgentStudio), {
-  ssr: false,
-  loading: () => <div className="h-full w-full bg-black flex items-center justify-center text-white/20">Loading Design Studio...</div>
-});
+import { useParams } from 'next/navigation';
+import { ImageStudio, VideoStudio, CinemaStudio, getUserBalance, INTERNAL_SESSION_KEY } from 'studio';
 import axios from 'axios';
 import ArticogAccessScreen from './ArticogAccessScreen';
 import ArticogLogo from './ArticogLogo';
@@ -26,20 +20,9 @@ const TABS = [
     label: 'Image Studio',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
         <circle cx="8.5" cy="8.5" r="1.5"/>
         <polyline points="21 15 16 10 5 21"/>
-      </svg>
-    )
-  },
-  {
-    id: 'layers',
-    label: 'Layers Studio',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-        <polyline points="2 17 12 22 22 17"/>
-        <polyline points="2 12 12 17 22 12"/>
       </svg>
     )
   },
@@ -50,74 +33,6 @@ const TABS = [
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="23 7 16 12 23 17 23 7"/>
         <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-      </svg>
-    )
-  },
-  {
-    id: 'audio',
-    label: 'Audio Studio',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 18V5l12-2v13"/>
-        <circle cx="6" cy="18" r="3"/>
-        <circle cx="18" cy="16" r="3"/>
-      </svg>
-    )
-  },
-  {
-    id: 'clipping',
-    label: 'AI Clipping',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="6" cy="6" r="3"/>
-        <circle cx="6" cy="18" r="3"/>
-        <line x1="20" y1="4" x2="8.12" y2="15.88"/>
-        <line x1="14.47" y1="14.47" x2="20" y2="20"/>
-        <line x1="8.12" y1="8.12" x2="12" y2="12"/>
-      </svg>
-    )
-  },
-  {
-    id: 'motion-control',
-    label: 'Motion Control',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="5" r="3"/>
-        <line x1="12" y1="8" x2="12" y2="14"/>
-        <path d="M9 11l3 3 3-3"/>
-        <path d="M7 21l5-5 5 5"/>
-      </svg>
-    )
-  },
-  {
-    id: 'vibe-motion',
-    label: 'Vibe Motion',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-      </svg>
-    )
-  },
-  {
-    id: 'lipsync',
-    label: 'Lip Sync',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-        <line x1="12" y1="19" x2="12" y2="22"/>
-      </svg>
-    )
-  },
-  {
-    id: 'body-swap',
-    label: 'Body Swap',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="8.5" cy="7" r="4"/>
-        <polyline points="17 11 19 13 23 9"/>
-        <path d="M23 13v-2"/>
       </svg>
     )
   },
@@ -136,76 +51,6 @@ const TABS = [
         <line x1="17" y1="7" x2="22" y2="7"/>
       </svg>
     )
-  },
-  {
-    id: 'marketing',
-    label: 'Marketing Studio',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        <line x1="8" y1="9" x2="16" y2="9"/>
-        <line x1="8" y1="13" x2="14" y2="13"/>
-      </svg>
-    )
-  },
-  {
-    id: 'workflows',
-    label: 'Workflows',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="6" height="6" rx="1"/>
-        <rect x="15" y="3" width="6" height="6" rx="1"/>
-        <rect x="9" y="15" width="6" height="6" rx="1"/>
-        <path d="M6 9v3a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9"/>
-        <path d="M12 13v2"/>
-      </svg>
-    )
-  },
-  {
-    id: 'agents',
-    label: 'Agents',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="11" width="18" height="10" rx="2"/>
-        <circle cx="12" cy="5" r="2"/>
-        <path d="M12 7v4"/>
-        <line x1="8" y1="16" x2="8.01" y2="16"/>
-        <line x1="16" y1="16" x2="16.01" y2="16"/>
-      </svg>
-    )
-  },
-  {
-    id: 'design-agent',
-    label: 'Design Agent',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-        <path d="M2 2l7.586 7.586"/>
-        <circle cx="11" cy="11" r="2"/>
-      </svg>
-    )
-  },
-  {
-    id: 'apps',
-    label: 'Explore Apps',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7"/>
-        <rect x="14" y="3" width="7" height="7"/>
-        <rect x="14" y="14" width="7" height="7"/>
-        <rect x="3" y="14" width="7" height="7"/>
-      </svg>
-    )
-  },
-  {
-    id: 'ai-influencer',
-    label: 'AI Influencer Studio',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-      </svg>
-    )
   }
 ];
 
@@ -213,7 +58,7 @@ const NAVIGATION_CATEGORIES = [
   {
     id: 'images',
     label: 'Images',
-    tabIds: ['image', 'cinema', 'ai-influencer'],
+    tabIds: ['image', 'cinema'],
     icon: (
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -234,21 +79,7 @@ const NAVIGATION_CATEGORIES = [
       </svg>
     )
   },
-  {
-    id: 'audio',
-    label: 'Audio',
-    tabIds: ['audio'],
-    icon: (
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 18V5l12-2v13"/>
-        <circle cx="6" cy="18" r="3"/>
-        <circle cx="18" cy="16" r="3"/>
-      </svg>
-    )
-  },
 ];
-
-const EXPLORE_APPS_TAB = TABS.find((tab) => tab.id === 'apps');
 
 const getNavigationCategory = (tabId) => (
   NAVIGATION_CATEGORIES.find((category) => category.tabIds.includes(tabId))
@@ -287,10 +118,7 @@ const persistNotifications = (notifications) => {
 
 export default function StandaloneShell({ locale = 'en' }) {
   const params = useParams();
-  const router = useRouter();
   const slug = params?.slug || [];
-  const idFromParams = params?.id;
-  const tabFromParams = params?.tab;
 
   const copy = getCommonCopy(locale);
   const tabLabel = useCallback(
@@ -303,30 +131,10 @@ export default function StandaloneShell({ locale = 'en' }) {
   );
   const studioPath = useCallback((tabId) => localizeStudioPath(locale, tabId), [locale]);
 
-  // Helper to extract workflow details precisely from either route structure
-  const getWorkflowInfo = useCallback(() => {
-    if (idFromParams) {
-        return { id: idFromParams, tab: tabFromParams || null };
-    }
-    const wfIndex = slug.findIndex(s => s === 'workflows' || s === 'workflow');
-    if (wfIndex === -1) return { id: null, tab: null };
-    return {
-      id: slug[wfIndex + 1] || null,
-      tab: slug[wfIndex + 2] || null
-    };
-  }, [slug, idFromParams, tabFromParams]);
-
-  const { id: urlWorkflowId } = getWorkflowInfo();
-
   // Initialize activeTab from URL slug/params or default to 'image'
   const getInitialTab = () => {
-    if (idFromParams || slug.includes('workflow')) return 'workflows';
-    if (slug.includes('agents')) return 'agents';
-    if (slug.includes('design-agent')) return 'design-agent';
-    if (slug.includes('apps')) return 'apps';
     const firstSegment = slug[0];
-    if (firstSegment && TABS.find(t => t.id === firstSegment)) return firstSegment;
-    return 'image';
+    return TABS.find((tab) => tab.id === firstSegment)?.id || 'image';
   };
   
   const [apiKey, setApiKey] = useState(null);
@@ -337,7 +145,6 @@ export default function StandaloneShell({ locale = 'en' }) {
 
   const [balance, setBalance] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [hasMounted, setHasMounted] = useState(false);
 
   // Sidebar Collapsed & Mobile Drawer State
@@ -347,41 +154,17 @@ export default function StandaloneShell({ locale = 'en' }) {
   });
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [expandedCategoryId, setExpandedCategoryId] = useState(() => (
-    getNavigationCategory(getInitialTab())?.id || NAVIGATION_CATEGORIES[0].id
+      getNavigationCategory(getInitialTab())?.id || NAVIGATION_CATEGORIES[0].id
   ));
   const activeCategory = getNavigationCategory(activeTab);
 
   const toggleSidebar = useCallback(() => {
-    setIsSidebarCollapsed(prev => {
-      const next = !prev;
+    setIsSidebarCollapsed((previous) => {
+      const next = !previous;
       localStorage.setItem('sidebar_collapsed', next ? 'true' : 'false');
       return next;
     });
   }, []);
-
-  const handleCategoryToggle = useCallback((categoryId) => {
-    const isCollapsedNavigation = isSidebarCollapsed && !isMobileOpen;
-
-    if (!isCollapsedNavigation) {
-      setExpandedCategoryId((currentId) => (
-        currentId === categoryId ? null : categoryId
-      ));
-      return;
-    }
-
-    setExpandedCategoryId(categoryId);
-    toggleSidebar();
-  }, [isMobileOpen, isSidebarCollapsed, toggleSidebar]);
-
-  useEffect(() => {
-    if (activeCategory?.id) {
-      setExpandedCategoryId(activeCategory.id);
-    }
-  }, [activeCategory?.id]);
-
-  // Drag and Drop State
-  const [isDragging, setIsDragging] = useState(false);
-  const [droppedFiles, setDroppedFiles] = useState(null);
 
   // Global generation notifications remain mounted while users switch studios.
   const [notifications, setNotifications] = useState([]);
@@ -504,17 +287,16 @@ export default function StandaloneShell({ locale = 'en' }) {
       const localeAwarePath = rootPath && path.startsWith(rootPath) ? path.slice(rootPath.length) : path;
       const segments = localeAwarePath.split('/').filter(Boolean);
       const tabId = segments[1] || 'image';
-      if (TABS.find(t => t.id === tabId)) {
-        setActiveTab(tabId);
-      }
+      setActiveTab(TABS.find((tab) => tab.id === tabId)?.id || 'image');
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [locale]);
 
   const handleTabChange = useCallback((tabId) => {
-    window.history.pushState(null, '', studioPath(tabId));
-    setActiveTab(tabId);
+    const nextTab = TABS.find((tab) => tab.id === tabId)?.id || 'image';
+    window.history.pushState(null, '', studioPath(nextTab));
+    setActiveTab(nextTab);
   }, [studioPath]);
 
   const handleOpenNotification = useCallback((notification) => {
@@ -536,30 +318,6 @@ export default function StandaloneShell({ locale = 'en' }) {
       setIsMobileOpen(false);
     }
   };
-
-  // Auto-hide header when inside a specific workflow view or design agent
-  useEffect(() => {
-    const isEditingWorkflow = (activeTab === 'workflows' || !!idFromParams) && urlWorkflowId;
-    const isDesignAgent = activeTab === 'design-agent';
-    
-    if (isEditingWorkflow || isDesignAgent) {
-      setIsHeaderVisible(false);
-    } else {
-      setIsHeaderVisible(true);
-    }
-  }, [activeTab, urlWorkflowId, idFromParams]);
-
-  // Global builder CSS cleanup when switching away from Workflows or Design Agent tabs
-  useEffect(() => {
-    const fromBuilder = sessionStorage.getItem("fromWorkflowBuilder");
-    const fromDesignAgent = sessionStorage.getItem("fromDesignAgent");
-    
-    if ((fromBuilder && activeTab !== 'workflows') || (fromDesignAgent && activeTab !== 'design-agent')) {
-      sessionStorage.removeItem("fromWorkflowBuilder");
-      sessionStorage.removeItem("fromDesignAgent");
-      window.location.reload();
-    }
-  }, [activeTab]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -816,8 +574,7 @@ export default function StandaloneShell({ locale = 'en' }) {
       )}
 
       {/* Header */}
-      {isHeaderVisible && (
-        <header className="flex-shrink-0 h-14 border-b border-white/[0.08] flex items-center justify-between px-4 bg-black z-50 gap-4">
+      <header className="flex-shrink-0 h-14 border-b border-white/[0.08] flex items-center justify-between px-4 bg-black z-50 gap-4">
           {/* Left: Mobile menu toggle + Logo + Desktop Sidebar Toggle */}
           <div className="flex items-center gap-3">
             {/* Mobile drawer toggle */}
@@ -870,14 +627,12 @@ export default function StandaloneShell({ locale = 'en' }) {
           </div>
 
           {/* Active Tab Breadcrumb Badge */}
-          {activeTab !== 'lipsync' && (
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.05] text-xs text-white/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-white" />
-              <span className="font-medium text-white/80">
-                {tabLabel(activeTab) || copy.shell.studioFallback}
-              </span>
-            </div>
-          )}
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.05] text-xs text-white/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+            <span className="font-medium text-white/80">
+              {tabLabel(activeTab) || copy.shell.studioFallback}
+            </span>
+          </div>
 
           {/* Right: Actions */}
           <div className="flex-shrink-0 flex items-center gap-3">
@@ -900,8 +655,7 @@ export default function StandaloneShell({ locale = 'en' }) {
               <span className="hidden sm:inline">{copy.shell.settings}</span>
             </button>
           </div>
-        </header>
-      )}
+      </header>
 
       {/* Main Body Layout: Left Sidebar + Studio Content Area */}
       <div className="flex-1 min-h-0 flex relative overflow-hidden">
@@ -914,8 +668,7 @@ export default function StandaloneShell({ locale = 'en' }) {
         )}
 
         {/* Left Sidebar Navigation */}
-        {isHeaderVisible && (
-          <aside
+        <aside
               className={`
               fixed top-14 bottom-0 left-0 md:static md:h-full z-30 bg-black border-r border-white/[0.08] flex flex-col transition-all duration-300 ease-in-out flex-shrink-0 select-none
               ${isMobileOpen ? 'translate-x-0 w-60 z-50' : '-translate-x-full md:translate-x-0'}
@@ -1025,113 +778,19 @@ export default function StandaloneShell({ locale = 'en' }) {
                 })}
               </div>
 
-              {EXPLORE_APPS_TAB && (
-                <div className="mt-3 pt-3 border-t border-white/[0.07]">
-                  <a
-                    href={studioPath(EXPLORE_APPS_TAB.id)}
-                    onClick={(event) => handleNavigationItemClick(event, EXPLORE_APPS_TAB.id)}
-                    aria-current={activeTab === EXPLORE_APPS_TAB.id ? 'page' : undefined}
-                    aria-label={tabLabel(EXPLORE_APPS_TAB.id)}
-                    title={isSidebarCollapsed && !isMobileOpen ? tabLabel(EXPLORE_APPS_TAB.id) : undefined}
-                    className={`
-                      group relative flex items-center rounded-xl transition-all duration-150 text-[13px] font-semibold
-                      ${isSidebarCollapsed && !isMobileOpen ? 'h-10 w-10 justify-center mx-auto' : 'h-10 px-3 w-full gap-3'}
-                      ${activeTab === EXPLORE_APPS_TAB.id
-                        ? 'bg-white/[0.05] text-white border border-white/[0.08]'
-                        : 'text-white/55 hover:text-white hover:bg-white/[0.05] border border-transparent'
-                      }
-                    `}
-                  >
-                    {activeTab === EXPLORE_APPS_TAB.id && (
-                      <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-white rounded-r-full" />
-                    )}
-                    <span className={`flex-shrink-0 [&_svg]:h-4 [&_svg]:w-4 ${activeTab === EXPLORE_APPS_TAB.id ? 'text-white' : 'text-white/50 group-hover:text-white'}`}>
-                      {EXPLORE_APPS_TAB.icon}
-                    </span>
-                    {(!isSidebarCollapsed || isMobileOpen) && (
-                      <span className="truncate">{tabLabel(EXPLORE_APPS_TAB.id)}</span>
-                    )}
-                  </a>
-                </div>
-              )}
             </nav>
-          </aside>
-        )}
+        </aside>
 
         {/* Studio Content */}
         <div className="flex-1 min-h-0 h-full relative overflow-hidden bg-black">
         <div className={activeTab === 'image' ? "h-full w-full" : "hidden"}>
           <ImageStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
         </div>
-        <div className={activeTab === 'layers' ? "h-full w-full" : "hidden"}>
-          <LayersStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('layers')} onGenerationEnd={makeGenerationEndCallback('layers')} onGenerationComplete={makeSuccessCallback('layers')} onGenerationError={makeErrorCallback('layers')} />
-        </div>
         <div className={activeTab === 'video' ? "h-full w-full" : "hidden"}>
           <VideoStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('video')} onGenerationEnd={makeGenerationEndCallback('video')} onGenerationComplete={makeSuccessCallback('video')} onGenerationError={makeErrorCallback('video')} />
         </div>
-        <div className={activeTab === 'clipping' ? "h-full w-full" : "hidden"}>
-          <ClippingStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('clipping')} onGenerationEnd={makeGenerationEndCallback('clipping')} onGenerationComplete={makeSuccessCallback('clipping')} onGenerationError={makeErrorCallback('clipping')} />
-        </div>
-        <div className={activeTab === 'motion-control' ? "h-full w-full" : "hidden"}>
-          <MotionControlStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('motion-control')} onGenerationEnd={makeGenerationEndCallback('motion-control')} onGenerationComplete={makeSuccessCallback('motion-control')} onGenerationError={makeErrorCallback('motion-control')} />
-        </div>
-        <div className={activeTab === 'vibe-motion' ? "h-full w-full" : "hidden"}>
-          <VibeMotionStudio apiKey={apiKey} locale={locale} onGenerationStart={makeGenerationStartCallback('vibe-motion')} onGenerationEnd={makeGenerationEndCallback('vibe-motion')} onGenerationComplete={makeSuccessCallback('vibe-motion')} onGenerationError={makeErrorCallback('vibe-motion')} />
-        </div>
-        <div className={activeTab === 'lipsync' ? "h-full w-full" : "hidden"}>
-          <LipSyncStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('lipsync')} onGenerationEnd={makeGenerationEndCallback('lipsync')} onGenerationComplete={makeSuccessCallback('lipsync')} onGenerationError={makeErrorCallback('lipsync')} />
-        </div>
-        <div className={activeTab === 'body-swap' ? "h-full w-full" : "hidden"}>
-          <RecastStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('body-swap')} onGenerationEnd={makeGenerationEndCallback('body-swap')} onGenerationComplete={makeSuccessCallback('body-swap')} onGenerationError={makeErrorCallback('body-swap')} />
-        </div>
         <div className={activeTab === 'cinema' ? "h-full w-full" : "hidden"}>
           <CinemaStudio apiKey={apiKey} locale={locale} onGenerationStart={makeGenerationStartCallback('cinema')} onGenerationEnd={makeGenerationEndCallback('cinema')} onGenerationComplete={makeSuccessCallback('cinema')} onGenerationError={makeErrorCallback('cinema')} />
-        </div>
-        <div className={activeTab === 'audio' ? "h-full w-full" : "hidden"}>
-          <AudioStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('audio')} onGenerationEnd={makeGenerationEndCallback('audio')} onGenerationComplete={makeSuccessCallback('audio')} onGenerationError={makeErrorCallback('audio')} />
-        </div>
-        <div className={activeTab === 'marketing' ? "h-full w-full" : "hidden"}>
-          <MarketingStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('marketing')} onGenerationEnd={makeGenerationEndCallback('marketing')} onGenerationComplete={makeSuccessCallback('marketing')} onGenerationError={makeErrorCallback('marketing')} />
-        </div>
-        <div className={activeTab === 'workflows' ? "h-full w-full" : "hidden"}>
-          <WorkflowStudio
-            apiKey={apiKey}
-            isHeaderVisible={isHeaderVisible}
-            onToggleHeader={setIsHeaderVisible}
-            onGenerationStart={makeGenerationStartCallback('workflows')}
-            onGenerationEnd={makeGenerationEndCallback('workflows')}
-            onGenerationComplete={makeSuccessCallback('workflows')}
-            onGenerationError={makeErrorCallback('workflows')}
-          />
-        </div>
-        <div className={activeTab === 'agents' ? "h-full w-full" : "hidden"}>
-          <AgentStudio apiKey={apiKey} locale={locale} isHeaderVisible={isHeaderVisible} onToggleHeader={setIsHeaderVisible} />
-        </div>
-        <div className={activeTab === 'design-agent' ? "h-full w-full" : "hidden"}>
-          {activeTab === 'design-agent' && (
-            <DesignAgentStudio
-              apiKey={apiKey}
-              isHeaderVisible={isHeaderVisible}
-              onToggleHeader={setIsHeaderVisible}
-              onGenerationStart={makeGenerationStartCallback('design-agent')}
-              onGenerationEnd={makeGenerationEndCallback('design-agent')}
-              onGenerationComplete={makeSuccessCallback('design-agent')}
-              onGenerationError={makeErrorCallback('design-agent')}
-            />
-          )}
-        </div>
-        <div className={activeTab === 'apps' ? "h-full w-full" : "hidden"}>
-          <AppsStudio apiKey={apiKey} locale={locale} />
-        </div>
-        <div className={activeTab === 'ai-influencer' ? "h-full w-full" : "hidden"}>
-          <AiInfluencerStudio
-            apiKey={apiKey}
-            locale={locale}
-            onGenerationStart={makeGenerationStartCallback('ai-influencer')}
-            onGenerationEnd={makeGenerationEndCallback('ai-influencer')}
-            onGenerationComplete={makeSuccessCallback('ai-influencer')}
-            onGenerationError={makeErrorCallback('ai-influencer')}
-          />
         </div>
       </div>
     </div>
