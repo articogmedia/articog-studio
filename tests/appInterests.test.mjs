@@ -11,6 +11,16 @@ const { shouldRefreshSupabaseSession } = await import('../lib/supabase/middlewar
 const { requireAuthenticatedGatewayUser } = await import('../lib/gateway/auth.js');
 const { saveArticogProfile } = await import('../lib/supabase/profileClient.js');
 const { requestEmailSignInLink } = await import('../lib/supabase/signIn.js');
+const { clearTeamDemoSession, createTeamDemoSession } = await import('../lib/supabase/teamDemoClient.js');
+const { createTeamDemoSessionHandlers } = await import('../lib/supabase/teamDemoRoute.js');
+const {
+  createTeamDemoSessionToken,
+  resolveTeamDemoUser,
+  TEAM_DEMO_COOKIE,
+  TEAM_DEMO_SESSION_TTL_SECONDS,
+  verifyTeamDemoAccessCode,
+  verifyTeamDemoSessionToken,
+} = await import('../lib/supabase/teamDemoSession.js');
 const {
   ACCESS_PROFILE_STORAGE_KEY,
   clearStoredAccessProfile,
@@ -291,4 +301,97 @@ test('name-and-email sign-in requests a Supabase link back to the callback witho
   assert.equal(request.options.emailRedirectTo, 'https://articog-studio.vercel.app/auth/callback');
   assert.equal(request.options.shouldCreateUser, false);
   assert.match(message, /Open it in this browser/);
+});
+
+const teamDemoEnv = {
+  NODE_ENV: 'test',
+  NEXT_PUBLIC_USE_OWN_GATEWAY: 'true',
+  ARTICOG_ENABLE_TEAM_DEMO_ACCESS: 'true',
+  ARTICOG_TEAM_DEMO_ACCESS_CODE: 'team-demo-access-code-'.padEnd(48, 'a'),
+  ARTICOG_TEAM_DEMO_SESSION_SECRET: 'server-only-signing-secret-'.padEnd(48, 'b'),
+  ARTICOG_TEAM_DEMO_USER_ID: '123e4567-e89b-12d3-a456-426614174000',
+};
+
+test('team demo access code and signed session enforce expiry and configured account binding', async () => {
+  const now = 1_800_000_000_000;
+  assert.equal(verifyTeamDemoAccessCode(teamDemoEnv.ARTICOG_TEAM_DEMO_ACCESS_CODE, teamDemoEnv), true);
+  assert.equal(verifyTeamDemoAccessCode('incorrect-code', teamDemoEnv), false);
+
+  const token = createTeamDemoSessionToken(teamDemoEnv, now);
+  assert.deepEqual(verifyTeamDemoSessionToken(token, teamDemoEnv, now), {
+    userId: teamDemoEnv.ARTICOG_TEAM_DEMO_USER_ID,
+    expiresAt: Math.floor(now / 1000) + TEAM_DEMO_SESSION_TTL_SECONDS,
+  });
+  assert.equal(verifyTeamDemoSessionToken(`${token}tampered`, teamDemoEnv, now), null);
+  assert.equal(verifyTeamDemoSessionToken(token, teamDemoEnv, now + TEAM_DEMO_SESSION_TTL_SECONDS * 1000 + 1), null);
+
+  const resolved = await resolveTeamDemoUser(token, async (userId) => ({ id: userId, email: 'demo@example.com' }), teamDemoEnv, now);
+  assert.equal(resolved.id, teamDemoEnv.ARTICOG_TEAM_DEMO_USER_ID);
+  const wrongUser = await resolveTeamDemoUser(token, async () => ({ id: 'another-user' }), teamDemoEnv, now);
+  assert.equal(wrongUser, null);
+});
+
+test('team demo session endpoint rejects disabled, cross-origin, and invalid-code requests', async () => {
+  let accountLookupCalls = 0;
+  const handlers = createTeamDemoSessionHandlers({
+    getEnv: () => teamDemoEnv,
+    lookupUser: async () => { accountLookupCalls += 1; return { id: teamDemoEnv.ARTICOG_TEAM_DEMO_USER_ID }; },
+  });
+  const makeRequest = (origin, accessCode = teamDemoEnv.ARTICOG_TEAM_DEMO_ACCESS_CODE) => new Request('https://studio.example/api/team-demo/session', {
+    method: 'POST',
+    headers: { Origin: origin, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accessCode }),
+  });
+
+  assert.equal((await handlers.POST(makeRequest('https://attacker.example'))).status, 403);
+  assert.equal((await handlers.POST(makeRequest('https://studio.example', 'wrong-code'))).status, 401);
+  assert.equal(accountLookupCalls, 0);
+
+  const disabledHandlers = createTeamDemoSessionHandlers({
+    getEnv: () => ({ ...teamDemoEnv, ARTICOG_ENABLE_TEAM_DEMO_ACCESS: 'false' }),
+    lookupUser: async () => assert.fail('disabled team access must not look up an account'),
+  });
+  assert.equal((await disabledHandlers.POST(makeRequest('https://studio.example'))).status, 404);
+});
+
+test('team demo session endpoint issues only an HttpOnly cookie for the configured Supabase user', async () => {
+  const handlers = createTeamDemoSessionHandlers({
+    getEnv: () => teamDemoEnv,
+    lookupUser: async (userId) => ({ id: userId, email: 'demo@example.com' }),
+  });
+  const accessCode = teamDemoEnv.ARTICOG_TEAM_DEMO_ACCESS_CODE;
+  const response = await handlers.POST(new Request('https://studio.example/api/team-demo/session', {
+    method: 'POST',
+    headers: { Origin: 'https://studio.example', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accessCode }),
+  }));
+
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.deepEqual(result, { ok: true, expiresIn: TEAM_DEMO_SESSION_TTL_SECONDS });
+  assert.equal(JSON.stringify(result).includes(accessCode), false);
+  const cookie = response.headers.get('set-cookie');
+  assert.match(cookie, new RegExp(`^${TEAM_DEMO_COOKIE}=`));
+  assert.match(cookie, /HttpOnly/);
+  assert.match(cookie, /SameSite=Lax/);
+  const token = cookie.split(';', 1)[0].slice(`${TEAM_DEMO_COOKIE}=`.length);
+  assert.equal(verifyTeamDemoSessionToken(token, teamDemoEnv)?.userId, teamDemoEnv.ARTICOG_TEAM_DEMO_USER_ID);
+
+  const cleared = await handlers.DELETE(new Request('https://studio.example/api/team-demo/session', { method: 'DELETE' }));
+  assert.match(cleared.headers.get('set-cookie'), /Max-Age=0/);
+});
+
+test('team demo browser client sends the code same-origin and can clear the cookie session', async () => {
+  const calls = [];
+  const fakeRequest = async (url, init) => {
+    calls.push({ url, init });
+    return Response.json({ ok: true });
+  };
+  await createTeamDemoSession('team-demo-code', fakeRequest);
+  await clearTeamDemoSession(fakeRequest);
+  assert.deepEqual(calls.map(({ url }) => url), ['/api/team-demo/session', '/api/team-demo/session']);
+  assert.equal(calls[0].init.credentials, 'same-origin');
+  assert.equal(JSON.parse(calls[0].init.body).accessCode, 'team-demo-code');
+  assert.equal(calls[1].init.method, 'DELETE');
+  assert.equal(calls[1].init.credentials, 'same-origin');
 });

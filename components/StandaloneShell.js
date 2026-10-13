@@ -9,6 +9,7 @@ import ArticogLogo from './ArticogLogo';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { saveArticogProfile } from '@/lib/supabase/profileClient';
 import { requestEmailSignInLink } from '@/lib/supabase/signIn';
+import { clearTeamDemoSession, createTeamDemoSession } from '@/lib/supabase/teamDemoClient';
 import {
   clearStoredAccessProfile,
   readStoredAccessProfile,
@@ -416,7 +417,7 @@ export default function StandaloneShell({ locale = 'en' }) {
       } : storedProfile;
       let serverProfileComplete = false;
 
-      setProfileAuthenticated(!!user);
+      setProfileAuthenticated(false);
       setProfile(nextProfile);
       if (!user) {
         setApiKey(null);
@@ -431,28 +432,26 @@ export default function StandaloneShell({ locale = 'en' }) {
         } else {
           setAccessError('');
         }
-        setHasMounted(true);
-        return;
+      } else {
+        setAccessError('');
       }
 
-      setAccessError('');
       try {
         const response = await fetch('/api/profile', { cache: 'no-store', credentials: 'same-origin' });
         const result = await response.json();
         if (!response.ok) throw new Error(result.detail || 'Could not load your Articog profile.');
         if (revision !== sessionRevision || !isCurrent) return;
         if (result.authenticated && result.profile) {
+          setProfileAuthenticated(true);
           nextProfile = {
             ...result.profile,
-            fullName: result.profile.fullName || nextProfile.fullName,
-            email: user.email || result.profile.email,
+            fullName: result.profile.fullName || nextProfile?.fullName || '',
+            email: result.profile.email || user?.email || '',
           };
           serverProfileComplete = result.complete === true;
         }
       } catch (error) {
-        if (!nextProfile?.fullName.trim() || !nextProfile?.email.trim()) {
-          if (revision === sessionRevision && isCurrent) setAccessError(error.message || 'Could not load your Articog profile.');
-        }
+        if (revision === sessionRevision && isCurrent) setAccessError(error.message || 'Could not load your Articog profile.');
       }
 
       if (!isCurrent || revision !== sessionRevision) return;
@@ -531,6 +530,24 @@ export default function StandaloneShell({ locale = 'en' }) {
     const localProfile = saveStoredAccessProfile(savedProfile);
     setProfile(localProfile);
     if (!profileAuthenticated) {
+      if (savedProfile.teamAccessCode?.trim()) {
+        await createTeamDemoSession(savedProfile.teamAccessCode);
+        const response = await fetch('/api/profile', { cache: 'no-store', credentials: 'same-origin' });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.authenticated || !result.profile) {
+          throw new Error(result.detail || 'Temporary team access could not be verified.');
+        }
+
+        setProfileAuthenticated(true);
+        setProfile(result.profile);
+        if (result.complete === true) {
+          clearStoredAccessProfile();
+          setApiKey(INTERNAL_SESSION_KEY);
+          void fetchBalance(INTERNAL_SESSION_KEY);
+          return;
+        }
+        return 'Team access verified. Continue to save your profile.';
+      }
       return requestEmailSignInLink(supabaseBrowser(), localProfile.email, window.location.origin);
     }
 
@@ -542,6 +559,7 @@ export default function StandaloneShell({ locale = 'en' }) {
   }, [fetchBalance, profileAuthenticated]);
 
   const handleSignOut = useCallback(async () => {
+    await clearTeamDemoSession().catch(() => {});
     try {
       const supabase = supabaseBrowser();
       const { error } = await supabase.auth.signOut();
