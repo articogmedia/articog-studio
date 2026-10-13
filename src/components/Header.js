@@ -17,10 +17,10 @@ export function Header(navigate) {
     const logoContainer = document.createElement('div');
     logoContainer.className = 'cursor-pointer hover:scale-110 transition-transform flex items-center gap-2';
     logoContainer.innerHTML = `
-        <div class="h-8 aspect-[4/1] overflow-hidden shrink-0">
-            <img src="./articog-logo.png" alt="Articog" class="w-full h-full object-cover">
+        <div class="w-8 h-8 rounded-full">
+            <img src="./articog-icon.png" alt="Articog" class="w-8 h-8 rounded-full object-cover">
         </div>
-        <span class="hidden sm:block text-white/55 text-sm font-normal">Studio</span>
+        <span class="text-sm font-bold tracking-tight text-white hidden sm:block">Articog Studio</span>
     `;
 
     const menu = document.createElement('nav');
