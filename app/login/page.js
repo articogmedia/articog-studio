@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
+import { requestEmailSignIn } from '@/lib/supabase/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -12,7 +13,7 @@ export default function LoginPage() {
   async function sendLink(e) {
     e.preventDefault();
     const supabase = supabaseBrowser();
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo(), shouldCreateUser: false } });
+    const { error } = await requestEmailSignIn(supabase, email.trim().toLowerCase(), redirectTo());
     setMessage(error ? error.message : 'Check your email for a sign-in link.');
   }
 

@@ -11,6 +11,7 @@ import {
   readStoredAccessProfile,
   saveStoredAccessProfile,
 } from '@/lib/accessProfileStorage';
+import { supabaseBrowser } from '@/lib/supabase/client';
 import { getCommonCopy, getLocaleConfig, localizeStudioPath } from '@/lib/locales';
 
 // Tab/category ids, icons, and English `label` fallbacks are stable
@@ -394,14 +395,40 @@ export default function StandaloneShell({ locale = 'en' }) {
   };
 
   useEffect(() => {
+    let isCurrent = true;
     const storedProfile = readStoredAccessProfile();
-    if (storedProfile) {
-      setProfile(storedProfile);
-      // This marker selects first-party browser requests; API authorization still requires a verified Supabase user.
-      setApiKey(INTERNAL_SESSION_KEY);
-      void fetchBalance(INTERNAL_SESSION_KEY);
+    setProfile(storedProfile);
+
+    async function loadAuthenticatedProfile() {
+      try {
+        const response = await fetch('/api/profile', {
+          credentials: 'same-origin',
+          cache: 'no-store',
+        });
+        const result = await response.json();
+        if (!isCurrent || !response.ok || !result.authenticated) return;
+
+        if (result.complete) {
+          const verifiedProfile = saveStoredAccessProfile(result.profile);
+          setProfile(verifiedProfile);
+          setApiKey(INTERNAL_SESSION_KEY);
+          void fetchBalance(INTERNAL_SESSION_KEY);
+        } else {
+          setProfile({
+            ...storedProfile,
+            ...result.profile,
+            fullName: result.profile.fullName || storedProfile?.fullName || '',
+          });
+        }
+      } catch (error) {
+        console.error('[auth] profile check failed', error?.name || 'unknown');
+      } finally {
+        if (isCurrent) setHasMounted(true);
+      }
     }
-    setHasMounted(true);
+
+    void loadAuthenticatedProfile();
+    return () => { isCurrent = false; };
   }, [fetchBalance]);
 
   const handleKeySave = useCallback((key) => {
@@ -425,7 +452,14 @@ export default function StandaloneShell({ locale = 'en' }) {
     void fetchBalance(INTERNAL_SESSION_KEY);
   }, [fetchBalance]);
 
-  const handleSignOut = useCallback(() => {
+  const handleSignOut = useCallback(async () => {
+    try {
+      const { error } = await supabaseBrowser().auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      console.error('[auth] sign out failed', error?.name || 'unknown');
+      return;
+    }
     clearStoredAccessProfile();
     setProfile(null);
     setApiKey(null);

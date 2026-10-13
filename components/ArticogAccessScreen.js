@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import ArticogLogo from './ArticogLogo';
+import { saveStoredAccessProfile } from '@/lib/accessProfileStorage';
+import { getAuthenticatedUser, requestEmailSignIn } from '@/lib/supabase/auth';
+import { supabaseBrowser } from '@/lib/supabase/client';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -9,6 +12,7 @@ export default function ArticogAccessScreen({ initialProfile, onComplete }) {
   const [fullName, setFullName] = useState(initialProfile?.fullName || '');
   const [email, setEmail] = useState(initialProfile?.email || '');
   const [errors, setErrors] = useState({});
+  const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event) {
@@ -29,9 +33,32 @@ export default function ArticogAccessScreen({ initialProfile, onComplete }) {
 
     setIsSubmitting(true);
     try {
-      await onComplete({ fullName: trimmedName, email: normalizedEmail });
+      const supabase = supabaseBrowser();
+      const user = await getAuthenticatedUser(supabase);
+
+      if (user?.email?.toLowerCase() === normalizedEmail) {
+        const response = await fetch('/api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ fullName: trimmedName, email: normalizedEmail }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || 'Could not save your account details.');
+        await onComplete(result.profile);
+      } else {
+        saveStoredAccessProfile({ fullName: trimmedName, email: normalizedEmail });
+        const { error: signInError } = await requestEmailSignIn(
+          supabase,
+          normalizedEmail,
+          `${window.location.origin}/auth/callback`,
+        );
+        if (signInError) throw signInError;
+        setMessage('Check your email for a sign-in link to continue.');
+      }
     } catch (error) {
-      setErrors({ form: error?.message || 'Could not save your details in this browser.' });
+      setErrors({ form: error?.message || 'Could not start sign-in. Please try again.' });
+    } finally {
       setIsSubmitting(false);
     }
   }
@@ -94,8 +121,9 @@ export default function ArticogAccessScreen({ initialProfile, onComplete }) {
             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-white px-5 py-3 text-sm font-semibold text-[#101111] transition-colors hover:bg-white/90 disabled:cursor-wait disabled:opacity-60"
           >
             {isSubmitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/25 border-t-black" aria-hidden="true" />}
-            {isSubmitting ? 'Opening Studio...' : 'Continue to Studio'}
+            {isSubmitting ? 'Sending sign-in link...' : 'Continue to Studio'}
           </button>
+          {message && <p role="status" className="text-center text-sm text-white/60">{message}</p>}
         </form>
       </section>
     </main>

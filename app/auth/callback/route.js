@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createResponseCookieAdapter } from '@/lib/supabase/auth';
 
 export async function GET(request) {
   const url = new URL(request.url);
@@ -15,21 +15,17 @@ export async function GET(request) {
   }
 
   try {
-    const store = await cookies();
+    const response = NextResponse.redirect(new URL('/studio', request.url));
     const supabase = createServerClient(supaUrl, supaKey, {
-      cookies: {
-        getAll: () => store.getAll(),
-        setAll: (list) => list.forEach(({ name, value, options }) => store.set(name, value, options)),
-      },
+      cookies: createResponseCookieAdapter(request.cookies, response.cookies),
     });
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) throw error;
+    return response;
   } catch (error) {
     console.error('[auth] callback exchange failed', error?.name || 'unknown');
     const redirectUrl = new URL('/studio', request.url);
     redirectUrl.searchParams.set('auth_error', 'callback_failed');
     return NextResponse.redirect(redirectUrl);
   }
-
-  return NextResponse.redirect(new URL('/studio', request.url));
 }

@@ -8,6 +8,7 @@ await new Promise((resolve) => process.nextTick(resolve));
 const { createAppInterestsHandlers } = await import('../lib/supabase/appInterestsHandlers.js');
 const { createBalanceHandler } = await import('../lib/supabase/balanceHandler.js');
 const { shouldRefreshSupabaseSession } = await import('../lib/supabase/middlewarePolicy.js');
+const { createResponseCookieAdapter, getAuthenticatedUser, requestEmailSignIn } = await import('../lib/supabase/auth.js');
 const { requireAuthenticatedGatewayUser } = await import('../lib/gateway/auth.js');
 const {
   ACCESS_PROFILE_STORAGE_KEY,
@@ -210,6 +211,60 @@ test('Supabase session refresh covers authenticated first-party APIs but not ups
   assert.equal(shouldRefreshSupabaseSession('/api/v1/seedream-5.0-pro', false), false);
   assert.equal(shouldRefreshSupabaseSession('/api/v1/account/balance', false), true);
   assert.equal(shouldRefreshSupabaseSession('/studio/image', false), true);
+});
+
+test('email sign-in uses the callback URL and does not create unverified accounts', async () => {
+  let request;
+  const supabase = {
+    auth: {
+      signInWithOtp: async (options) => { request = options; return { error: null }; },
+    },
+  };
+
+  await requestEmailSignIn(supabase, 'user@example.com', 'https://beta.articog.in/auth/callback');
+
+  assert.deepEqual(request, {
+    email: 'user@example.com',
+    options: {
+      emailRedirectTo: 'https://beta.articog.in/auth/callback',
+      shouldCreateUser: false,
+    },
+  });
+});
+
+test('signed-out browser sessions proceed to login while other user verification errors propagate', async () => {
+  const signedOut = await getAuthenticatedUser({
+    auth: { getUser: async () => ({ data: { user: null }, error: { name: 'AuthSessionMissingError' } }) },
+  });
+  assert.equal(signedOut, null);
+
+  const user = { id: 'verified-user', email: 'user@example.com' };
+  assert.equal(await getAuthenticatedUser({
+    auth: { getUser: async () => ({ data: { user }, error: null }) },
+  }), user);
+
+  await assert.rejects(
+    getAuthenticatedUser({
+      auth: { getUser: async () => ({ data: { user: null }, error: new Error('Auth service unavailable') }) },
+    }),
+    /Auth service unavailable/,
+  );
+});
+
+test('auth callback reads request cookies and writes refreshed session cookies to its response', () => {
+  const requestCookies = { getAll: () => [{ name: 'sb-refresh-token', value: 'incoming' }] };
+  const responseCookies = [];
+  const adapter = createResponseCookieAdapter(requestCookies, {
+    set: (...cookie) => responseCookies.push(cookie),
+  });
+
+  assert.deepEqual(adapter.getAll(), [{ name: 'sb-refresh-token', value: 'incoming' }]);
+  adapter.setAll([{ name: 'sb-access-token', value: 'verified', options: { httpOnly: true, secure: true } }]);
+  assert.deepEqual(responseCookies, [[
+    'sb-access-token',
+    'verified',
+    { httpOnly: true, secure: true },
+  ]]);
 });
 
 test('static access profile persists locally and clearing browser storage shows the access screen again', () => {
