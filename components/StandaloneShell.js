@@ -6,8 +6,6 @@ import { ImageStudio, VideoStudio, CinemaStudio, AudioStudio, AppsStudio, AiInfl
 import axios from 'axios';
 import ArticogAccessScreen from './ArticogAccessScreen';
 import ArticogLogo from './ArticogLogo';
-import { supabaseBrowser } from '@/lib/supabase/client';
-import { saveArticogProfile } from '@/lib/supabase/profileClient';
 import {
   clearStoredAccessProfile,
   readStoredAccessProfile,
@@ -191,8 +189,6 @@ export default function StandaloneShell({ locale = 'en' }) {
   
   const [apiKey, setApiKey] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [profileAuthenticated, setProfileAuthenticated] = useState(false);
-  const [accessError, setAccessError] = useState('');
   const [activeTab, setActiveTab] = useState(getInitialTab());
 
   const [balance, setBalance] = useState(null);
@@ -398,116 +394,14 @@ export default function StandaloneShell({ locale = 'en' }) {
   };
 
   useEffect(() => {
-    let isCurrent = true;
-    let initialSessionHandled = false;
-    let sessionRevision = 0;
-
-    const applySession = async (session) => {
-      if (!isCurrent) return;
-      const revision = ++sessionRevision;
-      const user = session?.user || null;
-      const storedProfile = readStoredAccessProfile();
-      const storedProfileMatchesUser = storedProfile?.email?.toLowerCase() === user?.email?.toLowerCase();
-      let nextProfile = user ? {
-        fullName: user.user_metadata?.articog_profile?.fullName || (storedProfileMatchesUser ? storedProfile.fullName : ''),
-        email: user.email || '',
-        company: user.user_metadata?.articog_profile?.company || '',
-      } : storedProfile;
-      let serverProfileComplete = false;
-
-      setProfileAuthenticated(false);
-      setProfile(nextProfile);
-      if (!user) {
-        setApiKey(null);
-        setBalance(null);
-        const authError = new URLSearchParams(window.location.search).get('auth_error');
-        if (authError === 'callback_failed') {
-          setAccessError(authError === 'callback_failed'
-            ? 'The sign-in link could not be verified. Request a new link and open it in this browser.'
-            : 'The sign-in callback could not be completed. Check the Supabase configuration and try again.');
-        } else if (authError) {
-          setAccessError('The sign-in callback could not be completed. Check the Supabase configuration and try again.');
-        } else {
-          setAccessError('');
-        }
-      } else {
-        setAccessError('');
-      }
-
-      try {
-        const response = await fetch('/api/profile', { cache: 'no-store', credentials: 'same-origin' });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.detail || 'Could not load your Articog profile.');
-        if (revision !== sessionRevision || !isCurrent) return;
-        if (result.authenticated && result.profile) {
-          setProfileAuthenticated(true);
-          nextProfile = {
-            ...result.profile,
-            fullName: result.profile.fullName || nextProfile?.fullName || '',
-            email: result.profile.email || user?.email || '',
-          };
-          serverProfileComplete = result.complete === true;
-        }
-      } catch (error) {
-        if (revision === sessionRevision && isCurrent) setAccessError(error.message || 'Could not load your Articog profile.');
-      }
-
-      if (!isCurrent || revision !== sessionRevision) return;
-      setProfile(nextProfile);
-      if (serverProfileComplete) {
-        clearStoredAccessProfile();
-        setApiKey(INTERNAL_SESSION_KEY);
-        void fetchBalance(INTERNAL_SESSION_KEY);
-      } else {
-        setApiKey(null);
-        setBalance(null);
-      }
-      setHasMounted(true);
-    };
-
-    async function restoreAuthSession() {
-      try {
-        const supabase = supabaseBrowser();
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-          if (event === 'INITIAL_SESSION') {
-            if (initialSessionHandled) return;
-            initialSessionHandled = true;
-            window.setTimeout(() => { void applySession(session); }, 0);
-            return;
-          }
-          window.setTimeout(() => { void applySession(session); }, 0);
-        });
-
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error && error.name !== 'AuthSessionMissingError') throw error;
-        if (!initialSessionHandled) {
-          initialSessionHandled = true;
-          await applySession(user ? { user } : null);
-        }
-        return () => subscription.unsubscribe();
-      } catch (error) {
-        if (!isCurrent) return;
-        if (error?.name === 'AuthSessionMissingError') {
-          await applySession(null);
-        } else {
-          console.error('Articog profile lookup failed:', error?.name || 'unknown');
-          setAccessError(error.message || 'Could not verify your Articog account.');
-          setHasMounted(true);
-        }
-      }
+    const storedProfile = readStoredAccessProfile();
+    if (storedProfile) {
+      setProfile(storedProfile);
+      // This marker selects first-party browser requests; API authorization still requires a verified Supabase user.
+      setApiKey(INTERNAL_SESSION_KEY);
+      void fetchBalance(INTERNAL_SESSION_KEY);
     }
-
-    let unsubscribe = () => {};
-    void restoreAuthSession().then((cleanup) => {
-      if (typeof cleanup === 'function') {
-        if (isCurrent) unsubscribe = cleanup;
-        else cleanup();
-      }
-    });
-    return () => {
-      isCurrent = false;
-      unsubscribe();
-    };
+    setHasMounted(true);
   }, [fetchBalance]);
 
   const handleKeySave = useCallback((key) => {
@@ -524,32 +418,16 @@ export default function StandaloneShell({ locale = 'en' }) {
     document.cookie = "muapi_key=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
   }, []);
 
-  const handleAccessComplete = useCallback(async (savedProfile) => {
-    const localProfile = saveStoredAccessProfile(savedProfile);
-    setProfile(localProfile);
-    if (!profileAuthenticated) {
-      return 'Your details are saved in this browser. Demo access requires an authorized Vercel team session.';
-    }
-
-    const persistedProfile = await saveArticogProfile(savedProfile);
-    clearStoredAccessProfile();
+  const handleAccessComplete = useCallback((savedProfile) => {
+    const persistedProfile = saveStoredAccessProfile(savedProfile);
     setProfile(persistedProfile);
     setApiKey(INTERNAL_SESSION_KEY);
     void fetchBalance(INTERNAL_SESSION_KEY);
-  }, [fetchBalance, profileAuthenticated]);
+  }, [fetchBalance]);
 
-  const handleSignOut = useCallback(async () => {
-    try {
-      const supabase = supabaseBrowser();
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    } catch (error) {
-      console.error('Sign out failed:', error?.name || 'unknown');
-      return;
-    }
+  const handleSignOut = useCallback(() => {
     clearStoredAccessProfile();
     setProfile(null);
-    setProfileAuthenticated(false);
     setApiKey(null);
     setBalance(null);
     setShowSettings(false);
@@ -640,7 +518,6 @@ export default function StandaloneShell({ locale = 'en' }) {
     return (
       <ArticogAccessScreen
         initialProfile={profile}
-        accessError={accessError}
         onComplete={handleAccessComplete}
       />
     );

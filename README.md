@@ -509,8 +509,6 @@ npm run start
 
 For Supabase-authenticated hosted users, set `NEXT_PUBLIC_USE_OWN_GATEWAY=true` in the Vercel project's Environment Variables for every deployment target that should use the first-party gateway. This public variable is embedded in the browser bundle at build time and is also read by the server routes, so set it before building and redeploy after changing it. Configure the Supabase URL, publishable key, and server secret in the appropriate Vercel environments; do not expose the server secret as a `NEXT_PUBLIC_` variable.
 
-For a static Studio entry screen and an internal team demo on Vercel Hobby, enable **All Deployments** protection with **Vercel Authentication** and grant access only to authorized team members. This platform edge gate must protect the production domain and generated deployment URLs; requests to every API route must pass through it. Set the server-only `ARTICOG_ENABLE_VERCEL_AUTH_TEAM_DEMO=true` and `ARTICOG_TEAM_DEMO_USER_ID` to the UUID of an existing Supabase user with the intended demo credits. In this mode, authorized deployment traffic shares that Supabase user's credits and job ownership. The server ignores browser-entered names and emails for authentication and fails closed outside Vercel production, unless the own gateway and explicit demo flag are enabled. Do not enable the application flag unless Vercel Authentication is protecting every deployment URL.
-
 ### Desktop App Build
 
 Build native desktop apps with Electron:

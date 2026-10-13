@@ -9,8 +9,6 @@ const { createAppInterestsHandlers } = await import('../lib/supabase/appInterest
 const { createBalanceHandler } = await import('../lib/supabase/balanceHandler.js');
 const { shouldRefreshSupabaseSession } = await import('../lib/supabase/middlewarePolicy.js');
 const { requireAuthenticatedGatewayUser } = await import('../lib/gateway/auth.js');
-const { saveArticogProfile } = await import('../lib/supabase/profileClient.js');
-const { resolveVercelTeamDemoUser } = await import('../lib/supabase/vercelTeamDemoUser.js');
 const {
   ACCESS_PROFILE_STORAGE_KEY,
   clearStoredAccessProfile,
@@ -256,59 +254,21 @@ test('internal session marker is not sent as a generation API credential', async
   assert.equal(request.init.credentials, 'same-origin');
 });
 
-test('profile completion posts with same-origin cookies and rejects unauthenticated saves', async () => {
-  const profile = { fullName: 'Studio User', email: 'user@example.com' };
-  let requestInit;
+test('browser-stored profile does not authenticate gateway requests', async () => {
+  const values = new Map([[ACCESS_PROFILE_STORAGE_KEY, JSON.stringify({
+    fullName: 'Studio User',
+    email: 'user@example.com',
+  })]]);
+  const storage = { getItem: (key) => values.get(key) ?? null };
+  assert.ok(readStoredAccessProfile(storage));
 
+  const { response } = await requireAuthenticatedGatewayUser(async () => null);
+  assert.equal(response.status, 401);
+});
+
+test('gateway authentication propagates Supabase verification failures', async () => {
   await assert.rejects(
-    saveArticogProfile(profile, async (_url, init) => {
-      requestInit = init;
-      return Response.json({ detail: 'Sign in to continue.' }, { status: 401 });
-    }),
-    /Sign in to continue/,
+    requireAuthenticatedGatewayUser(async () => { throw new Error('Supabase verification unavailable'); }),
+    /Supabase verification unavailable/,
   );
-  assert.equal(requestInit.credentials, 'same-origin');
-  assert.equal(requestInit.method, 'POST');
-
-  const result = await saveArticogProfile(profile, async () => (
-    Response.json({ complete: true, profile: { ...profile, company: '' } })
-  ));
-  assert.deepEqual(result, { ...profile, company: '' });
-});
-
-test('Vercel-protected production demo maps to the configured Supabase account', async () => {
-  const demoUserId = '123e4567-e89b-12d3-a456-426614174000';
-  let lookedUpUserId;
-  const user = await resolveVercelTeamDemoUser({
-    isVercelProduction: true,
-    ownGatewayEnabled: true,
-    demoAccessEnabled: true,
-    userId: demoUserId,
-    lookupUser: async (userId) => {
-      lookedUpUserId = userId;
-      return { id: userId, email: 'shared-demo@example.com' };
-    },
-  });
-
-  assert.equal(lookedUpUserId, demoUserId);
-  assert.equal(user.id, demoUserId);
-});
-
-test('Vercel demo account fallback fails closed outside protected production configuration', async () => {
-  const demoUserId = '123e4567-e89b-12d3-a456-426614174000';
-  let lookupCalls = 0;
-  const config = {
-    isVercelProduction: true,
-    ownGatewayEnabled: true,
-    demoAccessEnabled: true,
-    userId: demoUserId,
-    lookupUser: async () => { lookupCalls += 1; return { id: demoUserId }; },
-  };
-
-  assert.equal(await resolveVercelTeamDemoUser({ ...config, isVercelProduction: false }), null);
-  assert.equal(await resolveVercelTeamDemoUser({ ...config, ownGatewayEnabled: false }), null);
-  assert.equal(await resolveVercelTeamDemoUser({ ...config, demoAccessEnabled: false }), null);
-  assert.equal(await resolveVercelTeamDemoUser({ ...config, userId: 'not-a-uuid' }), null);
-  assert.equal(await resolveVercelTeamDemoUser({ ...config, lookupUser: async () => ({ id: 'other-user' }) }), null);
-  assert.equal(lookupCalls, 0);
 });

@@ -5,12 +5,11 @@ import ArticogLogo from './ArticogLogo';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function ArticogAccessScreen({ initialProfile, accessError, onComplete }) {
+export default function ArticogAccessScreen({ initialProfile, onComplete }) {
   const [fullName, setFullName] = useState(initialProfile?.fullName || '');
   const [email, setEmail] = useState(initialProfile?.email || '');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -30,11 +29,7 @@ export default function ArticogAccessScreen({ initialProfile, accessError, onCom
 
     setIsSubmitting(true);
     try {
-      const result = await onComplete({ fullName: trimmedName, email: normalizedEmail });
-      if (typeof result === 'string') {
-        setStatusMessage(result);
-      }
-      setIsSubmitting(false);
+      await onComplete({ fullName: trimmedName, email: normalizedEmail });
     } catch (error) {
       setErrors({ form: error?.message || 'Could not save your details in this browser.' });
       setIsSubmitting(false);
@@ -54,9 +49,7 @@ export default function ArticogAccessScreen({ initialProfile, accessError, onCom
         </div>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-5">
-          {accessError && <p role="alert" className="rounded-lg border border-rose-400/25 bg-rose-400/5 px-3 py-2.5 text-sm text-rose-200">{accessError}</p>}
           {errors.form && <p role="alert" className="rounded-lg border border-rose-400/25 bg-rose-400/5 px-3 py-2.5 text-sm text-rose-200">{errors.form}</p>}
-          {statusMessage && <p role="status" className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm text-white/75">{statusMessage}</p>}
           <div>
             <label htmlFor="access-full-name" className="text-[13px] font-medium text-white/85">Full Name <span className="text-rose-300">*</span></label>
             <input
