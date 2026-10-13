@@ -3,7 +3,12 @@
 import { useState } from 'react';
 import ArticogLogo from './ArticogLogo';
 import { saveStoredAccessProfile } from '@/lib/accessProfileStorage';
-import { getAuthenticatedUser, requestEmailSignIn } from '@/lib/supabase/auth';
+import {
+  createAuthCallbackUrl,
+  getAuthenticatedUser,
+  requestPasswordReset,
+  signInWithPassword,
+} from '@/lib/supabase/auth';
 import { supabaseBrowser } from '@/lib/supabase/client';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -11,6 +16,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function ArticogAccessScreen({ initialProfile, authError, onComplete }) {
   const [fullName, setFullName] = useState(initialProfile?.fullName || '');
   const [email, setEmail] = useState(initialProfile?.email || '');
+  const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,30 +40,69 @@ export default function ArticogAccessScreen({ initialProfile, authError, onCompl
     setIsSubmitting(true);
     try {
       const supabase = supabaseBrowser();
-      const user = await getAuthenticatedUser(supabase);
+      let user = await getAuthenticatedUser(supabase);
 
-      if (user?.email?.toLowerCase() === normalizedEmail) {
-        const response = await fetch('/api/profile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({ fullName: trimmedName, email: normalizedEmail }),
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.detail || 'Could not save your account details.');
-        await onComplete(result.profile);
-      } else {
-        saveStoredAccessProfile({ fullName: trimmedName, email: normalizedEmail });
-        const { error: signInError } = await requestEmailSignIn(
-          supabase,
-          normalizedEmail,
-          `${window.location.origin}/auth/callback`,
-        );
-        if (signInError) throw signInError;
-        setMessage('Check your email for a sign-in link to continue.');
+      if (user?.email?.toLowerCase() !== normalizedEmail) {
+        if (!password) {
+          setErrors({ password: 'Enter your password or use password recovery.' });
+          return;
+        }
+        const { data, error } = await signInWithPassword(supabase, normalizedEmail, password);
+        if (error) throw new Error('Email or password did not match. Use password recovery if needed.');
+        user = data?.user;
       }
+
+      if (!user?.email || user.email.toLowerCase() !== normalizedEmail) {
+        throw new Error('Could not verify that account. Please sign in again.');
+      }
+
+      try {
+        saveStoredAccessProfile({ fullName: trimmedName, email: normalizedEmail });
+      } catch {
+        // The server profile is authoritative; browser storage is optional.
+      }
+
+      const response = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ fullName: trimmedName, email: normalizedEmail }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.detail || 'Could not save your account details.');
+      await onComplete(result.profile);
     } catch (error) {
       setErrors({ form: error?.message || 'Could not start sign-in. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handlePasswordRecovery() {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || normalizedEmail.length > 254 || !EMAIL_PATTERN.test(normalizedEmail)) {
+      setErrors({ email: 'Enter a valid email address first.' });
+      return;
+    }
+
+    try {
+      if (fullName.trim()) saveStoredAccessProfile({ fullName: fullName.trim(), email: normalizedEmail });
+    } catch {
+      // Recovery must still work when browser storage is unavailable.
+    }
+
+    setIsSubmitting(true);
+    setErrors({});
+    try {
+      const { error } = await requestPasswordReset(
+        supabaseBrowser(),
+        normalizedEmail,
+        createAuthCallbackUrl(window.location.origin, '/login/reset-password'),
+      );
+      if (error) throw error;
+      setMessage('If this email belongs to an authorized account, a password reset link will be sent.');
+    } catch {
+      setErrors({ form: 'Could not request password recovery. Please wait before trying again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -116,13 +161,38 @@ export default function ArticogAccessScreen({ initialProfile, authError, onCompl
             {errors.email && <p id="access-email-error" className="mt-1.5 text-xs text-rose-300">{errors.email}</p>}
           </div>
 
+          <div>
+            <label htmlFor="access-password" className="text-[13px] font-medium text-white/85">Password</label>
+            <input
+              id="access-password"
+              name="password"
+              autoComplete="current-password"
+              type="password"
+              value={password}
+              onChange={(event) => { setPassword(event.target.value); setErrors((current) => ({ ...current, password: '' })); }}
+              aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? 'access-password-error' : undefined}
+              placeholder="Your account password"
+              className={fieldClass('password')}
+            />
+            {errors.password && <p id="access-password-error" className="mt-1.5 text-xs text-rose-300">{errors.password}</p>}
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handlePasswordRecovery}
+              className="mt-2 text-xs text-white/60 underline decoration-white/30 underline-offset-4 hover:text-white disabled:opacity-50"
+            >
+              Forgot password?
+            </button>
+          </div>
+
           <button
             type="submit"
             disabled={isSubmitting}
             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-white px-5 py-3 text-sm font-semibold text-[#101111] transition-colors hover:bg-white/90 disabled:cursor-wait disabled:opacity-60"
           >
             {isSubmitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/25 border-t-black" aria-hidden="true" />}
-            {isSubmitting ? 'Sending sign-in link...' : 'Continue to Studio'}
+            {isSubmitting ? 'Signing in...' : 'Continue to Studio'}
           </button>
           {message && <p role="status" className="text-center text-sm text-white/60">{message}</p>}
         </form>
