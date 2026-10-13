@@ -8,7 +8,7 @@ import { supabaseBrowser } from '@/lib/supabase/client';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function ArticogAccessScreen({ initialProfile, onComplete }) {
+export default function ArticogAccessScreen({ initialProfile, authError, onComplete }) {
   const [fullName, setFullName] = useState(initialProfile?.fullName || '');
   const [email, setEmail] = useState(initialProfile?.email || '');
   const [errors, setErrors] = useState({});
@@ -76,6 +76,7 @@ export default function ArticogAccessScreen({ initialProfile, onComplete }) {
         </div>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-5">
+          {authError && <p role="alert" className="rounded-lg border border-rose-400/25 bg-rose-400/5 px-3 py-2.5 text-sm text-rose-200">{authError}</p>}
           {errors.form && <p role="alert" className="rounded-lg border border-rose-400/25 bg-rose-400/5 px-3 py-2.5 text-sm text-rose-200">{errors.form}</p>}
           <div>
             <label htmlFor="access-full-name" className="text-[13px] font-medium text-white/85">Full Name <span className="text-rose-300">*</span></label>

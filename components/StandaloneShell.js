@@ -11,6 +11,7 @@ import {
   readStoredAccessProfile,
   saveStoredAccessProfile,
 } from '@/lib/accessProfileStorage';
+import { completeProfileFromDraft } from '@/lib/supabase/auth';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { getCommonCopy, getLocaleConfig, localizeStudioPath } from '@/lib/locales';
 
@@ -190,6 +191,7 @@ export default function StandaloneShell({ locale = 'en' }) {
   
   const [apiKey, setApiKey] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [authError, setAuthError] = useState(null);
   const [activeTab, setActiveTab] = useState(getInitialTab());
 
   const [balance, setBalance] = useState(null);
@@ -395,6 +397,16 @@ export default function StandaloneShell({ locale = 'en' }) {
   };
 
   useEffect(() => {
+    const currentUrl = new URL(window.location.href);
+    const callbackError = currentUrl.searchParams.get('auth_error');
+    if (callbackError) {
+      setAuthError('That sign-in link could not be used. Request a new link and open it before it expires.');
+      currentUrl.searchParams.delete('auth_error');
+      window.history.replaceState(null, '', currentUrl);
+    }
+  }, []);
+
+  useEffect(() => {
     let isCurrent = true;
     const storedProfile = readStoredAccessProfile();
     setProfile(storedProfile);
@@ -408,9 +420,15 @@ export default function StandaloneShell({ locale = 'en' }) {
         const result = await response.json();
         if (!isCurrent || !response.ok || !result.authenticated) return;
 
-        if (result.complete) {
-          const verifiedProfile = saveStoredAccessProfile(result.profile);
-          setProfile(verifiedProfile);
+        const verifiedProfile = await completeProfileFromDraft({
+          profileCheck: result,
+          draft: storedProfile,
+        });
+        if (!isCurrent) return;
+
+        if (verifiedProfile) {
+          const savedProfile = saveStoredAccessProfile(verifiedProfile);
+          setProfile(savedProfile);
           setApiKey(INTERNAL_SESSION_KEY);
           void fetchBalance(INTERNAL_SESSION_KEY);
         } else {
@@ -552,6 +570,7 @@ export default function StandaloneShell({ locale = 'en' }) {
     return (
       <ArticogAccessScreen
         initialProfile={profile}
+        authError={authError}
         onComplete={handleAccessComplete}
       />
     );

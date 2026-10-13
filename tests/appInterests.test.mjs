@@ -8,7 +8,13 @@ await new Promise((resolve) => process.nextTick(resolve));
 const { createAppInterestsHandlers } = await import('../lib/supabase/appInterestsHandlers.js');
 const { createBalanceHandler } = await import('../lib/supabase/balanceHandler.js');
 const { shouldRefreshSupabaseSession } = await import('../lib/supabase/middlewarePolicy.js');
-const { createResponseCookieAdapter, getAuthenticatedUser, requestEmailSignIn } = await import('../lib/supabase/auth.js');
+const {
+  completeProfileFromDraft,
+  createAuthCallbackHandler,
+  getAuthenticatedUser,
+  requestEmailSignIn,
+} = await import('../lib/supabase/auth.js');
+const { NextRequest, NextResponse } = await import('next/server.js');
 const { requireAuthenticatedGatewayUser } = await import('../lib/gateway/auth.js');
 const {
   ACCESS_PROFILE_STORAGE_KEY,
@@ -251,20 +257,108 @@ test('signed-out browser sessions proceed to login while other user verification
   );
 });
 
-test('auth callback reads request cookies and writes refreshed session cookies to its response', () => {
-  const requestCookies = { getAll: () => [{ name: 'sb-refresh-token', value: 'incoming' }] };
-  const responseCookies = [];
-  const adapter = createResponseCookieAdapter(requestCookies, {
-    set: (...cookie) => responseCookies.push(cookie),
+test('successful auth callback exchanges the code and persists session cookies on its studio redirect', async () => {
+  let exchangedCode;
+  const callback = createAuthCallbackHandler({
+    createServerClient: (url, key, { cookies }) => {
+      assert.equal(url, 'https://project.supabase.co');
+      assert.equal(key, 'publishable-key');
+      return {
+        auth: {
+          exchangeCodeForSession: async (code) => {
+            exchangedCode = code;
+            cookies.setAll([
+              { name: 'sb-access-token', value: 'verified-session', options: { httpOnly: true, secure: true, path: '/' } },
+              { name: 'sb-refresh-token', value: 'refresh-session', options: { httpOnly: true, secure: true, path: '/' } },
+            ]);
+            return { error: null };
+          },
+        },
+      };
+    },
+    createRedirect: (url) => NextResponse.redirect(url),
+    getConfig: () => ({ url: 'https://project.supabase.co', key: 'publishable-key' }),
   });
 
-  assert.deepEqual(adapter.getAll(), [{ name: 'sb-refresh-token', value: 'incoming' }]);
-  adapter.setAll([{ name: 'sb-access-token', value: 'verified', options: { httpOnly: true, secure: true } }]);
-  assert.deepEqual(responseCookies, [[
-    'sb-access-token',
-    'verified',
-    { httpOnly: true, secure: true },
-  ]]);
+  const response = await callback(new NextRequest('https://beta.articog.in/auth/callback?code=one-time-code'));
+
+  assert.equal(exchangedCode, 'one-time-code');
+  assert.equal(response.headers.get('location'), 'https://beta.articog.in/studio');
+  const setCookie = response.headers.get('set-cookie');
+  assert.match(setCookie, /sb-access-token=verified-session/);
+  assert.match(setCookie, /sb-refresh-token=refresh-session/);
+
+  const accessCookie = setCookie.match(/sb-access-token=verified-session/)[0];
+  const nextRequest = new NextRequest('https://beta.articog.in/api/profile', {
+    headers: { cookie: `${accessCookie}; sb-refresh-token=refresh-session` },
+  });
+  assert.equal(nextRequest.cookies.get('sb-access-token').value, 'verified-session');
+  assert.equal(nextRequest.cookies.get('sb-refresh-token').value, 'refresh-session');
+});
+
+test('expired auth callback redirects to the access screen with a visible error marker', async () => {
+  let loggedError;
+  const callback = createAuthCallbackHandler({
+    createServerClient: (_url, _key, { cookies }) => ({
+      auth: {
+        exchangeCodeForSession: async () => ({ error: Object.assign(new Error('expired'), { name: 'AuthApiError' }) }),
+      },
+    }),
+    createRedirect: (url) => NextResponse.redirect(url),
+    getConfig: () => ({ url: 'https://project.supabase.co', key: 'publishable-key' }),
+    onError: (error) => { loggedError = error.name; },
+  });
+
+  const response = await callback(new NextRequest('https://beta.articog.in/auth/callback?code=expired-code'));
+
+  assert.equal(response.headers.get('location'), 'https://beta.articog.in/studio?auth_error=callback_failed');
+  assert.equal(loggedError, 'AuthApiError');
+});
+
+test('authenticated incomplete profiles are completed only from a matching local draft', async () => {
+  let posted;
+  const profileCheck = {
+    authenticated: true,
+    complete: false,
+    profile: { fullName: '', email: 'user@example.com', company: '' },
+  };
+  const savedProfile = { fullName: 'Studio User', email: 'user@example.com', company: '' };
+  const completed = await completeProfileFromDraft({
+    profileCheck,
+    draft: { fullName: ' Studio User ', email: 'USER@example.com' },
+    fetchImpl: async (url, options) => {
+      posted = { url, options };
+      return Response.json({ complete: true, profile: savedProfile });
+    },
+  });
+
+  assert.deepEqual(completed, savedProfile);
+  assert.equal(posted.url, '/api/profile');
+  assert.equal(JSON.parse(posted.options.body).email, 'user@example.com');
+
+  let mismatchedDraftPosted = false;
+  const ignored = await completeProfileFromDraft({
+    profileCheck,
+    draft: { fullName: 'Other User', email: 'other@example.com' },
+    fetchImpl: async () => { mismatchedDraftPosted = true; return Response.json({}); },
+  });
+  assert.equal(ignored, null);
+  assert.equal(mismatchedDraftPosted, false);
+});
+
+test('failed profile completion leaves authenticated access incomplete', async () => {
+  await assert.rejects(
+    completeProfileFromDraft({
+      profileCheck: {
+        authenticated: true,
+        complete: false,
+        profile: { fullName: '', email: 'user@example.com' },
+      },
+      draft: { fullName: 'Studio User', email: 'user@example.com' },
+      fetchImpl: async () => Response.json({ detail: 'Profile storage unavailable.' }, { status: 503 }),
+    }),
+    /Profile storage unavailable/,
+  );
 });
 
 test('static access profile persists locally and clearing browser storage shows the access screen again', () => {
