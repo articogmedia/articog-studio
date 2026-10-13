@@ -6,6 +6,7 @@ register('./seedanceEsmLoader.mjs', import.meta.url);
 await new Promise((resolve) => process.nextTick(resolve));
 
 const { MODEL_REGISTRY, getProviderByName } = await import('../lib/gateway/registry.js');
+const { createDevSeedreamTestHandler, isDevSeedreamTestEnabled } = await import('../lib/gateway/devSeedreamTest.js');
 const { getEntry, start } = await import('../lib/gateway/providers/seedream.js');
 const { t2iModels, i2iModels } = await import('../packages/studio/src/models.js');
 
@@ -168,4 +169,86 @@ test('API errors surface useful messages without revealing the key', async () =>
       return true;
     },
   );
+});
+
+test('development Seedream test route is disabled unless explicitly enabled', async () => {
+  let providerCalls = 0;
+  const handler = createDevSeedreamTestHandler({
+    isEnabled: () => false,
+    hasApiKey: () => true,
+    generate: async () => { providerCalls += 1; return { status: 'completed', outputs: [] }; },
+  });
+
+  const response = await handler(new Request('http://localhost/api/dev/seedream-test', {
+    method: 'POST',
+    body: JSON.stringify({ prompt: 'A test image' }),
+  }));
+  assert.equal(response.status, 404);
+  assert.equal(providerCalls, 0);
+});
+
+test('Seedream dev test opt-in cannot enable the endpoint in production', () => {
+  assert.equal(isDevSeedreamTestEnabled({
+    NODE_ENV: 'production',
+    ARTICOG_ENABLE_SEEDREAM_DEV_TEST: 'true',
+  }), false);
+  assert.equal(isDevSeedreamTestEnabled({ NODE_ENV: 'development' }), false);
+  assert.equal(isDevSeedreamTestEnabled({
+    NODE_ENV: 'development',
+    ARTICOG_ENABLE_SEEDREAM_DEV_TEST: 'true',
+  }), true);
+});
+
+test('development Seedream test returns successful output details without credentials', async () => {
+  let receivedInput;
+  const handler = createDevSeedreamTestHandler({
+    isEnabled: () => true,
+    hasApiKey: () => true,
+    generate: async (input) => {
+      receivedInput = input;
+      return { status: 'completed', outputs: ['/api/files/test-output.jpeg'], usage: { total_tokens: 12 } };
+    },
+  });
+
+  const response = await handler(new Request('http://localhost/api/dev/seedream-test', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: '  Studio test  ', aspect_ratio: '16:9', resolution: '1k', ignored: 'value' }),
+  }));
+  assert.equal(response.status, 200);
+  assert.deepEqual(receivedInput, { prompt: 'Studio test', aspect_ratio: '16:9', resolution: '1K' });
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    endpoint: 'seedream-5.0-pro',
+    status: 'completed',
+    outputs: ['/api/files/test-output.jpeg'],
+    usage: { total_tokens: 12 },
+  });
+});
+
+test('development Seedream test reports provider errors without exposing the API key', async () => {
+  const apiKey = process.env.ARK_API_KEY;
+  process.env.ARK_API_KEY = 'test-secret-key';
+  const handler = createDevSeedreamTestHandler({
+    isEnabled: () => true,
+    hasApiKey: () => true,
+    generate: async () => { throw new Error('ModelArk rejected test-secret-key: invalid deployment'); },
+  });
+
+  try {
+    const response = await handler(new Request('http://localhost/api/dev/seedream-test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: 'A test image' }),
+    }));
+    const result = await response.json();
+    assert.equal(response.status, 502);
+    assert.equal(result.ok, false);
+    assert.equal(result.status, 'failed');
+    assert.match(result.error, /invalid deployment/);
+    assert.doesNotMatch(JSON.stringify(result), /test-secret-key/);
+  } finally {
+    if (apiKey === undefined) delete process.env.ARK_API_KEY;
+    else process.env.ARK_API_KEY = apiKey;
+  }
 });
