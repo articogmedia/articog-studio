@@ -14,9 +14,11 @@ function addSecurityHeaders(response) {
     // connect-src covers *.muapi.ai (not just api.muapi.ai) because generated
     // media, model thumbnails, and other assets are served from cdn.muapi.ai
     // and other muapi subdomains that the renderer fetches directly.
+    // It also allows Supabase Storage because packages/studio/src/byteplus.js
+    // (uploadBytePlusReferenceImage) PUTs reference images directly to a Supabase signed upload URL.
     response.headers.set(
         'Content-Security-Policy',
-        "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https://muapi.ai https://*.muapi.ai; font-src 'self' data:;"
+        "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https://muapi.ai https://*.muapi.ai https://*.supabase.co; font-src 'self' data:;"
     );
     return response;
 }
