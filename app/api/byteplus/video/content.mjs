@@ -1,3 +1,9 @@
+export const BYTEPLUS_GENERATION_BODY_LIMIT_BYTES = 4 * 1024 * 1024;
+
+export function isBytePlusGenerationBodyTooLarge(byteLength) {
+  return byteLength > BYTEPLUS_GENERATION_BODY_LIMIT_BYTES;
+}
+
 function isValidImageUrl(value) {
   if (typeof value !== "string" || !value.trim()) return false;
   const url = value.trim();

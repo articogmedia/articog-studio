@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, useId } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { generateVideo, generateI2V, processV2V, uploadFile } from "../muapi.js";
-import { fileToDataUrl, generateBytePlusVideo } from "../byteplus.js";
+import { generateBytePlusVideo, uploadBytePlusReferenceImage } from "../byteplus.js";
 import { formatErrorMessage } from "../utils/formatError.js";
 import { scopedPersistKey, migrateLegacyPersistKey } from "../persistKey.js";
 import DrawModal from "./DrawModal.jsx";
@@ -1610,7 +1610,12 @@ export default function VideoStudio({
         const progress = new Array(selectedFiles.length).fill(0);
         const results = await Promise.allSettled(
           selectedFiles.map((file, index) => provider === "byteplus"
-            ? fileToDataUrl(file)
+            ? uploadBytePlusReferenceImage(apiKey, file, (value) => {
+                progress[index] = value;
+                setProgress(
+                  Math.round(progress.reduce((sum, item) => sum + item, 0) / progress.length),
+                );
+              })
             : uploadFile(apiKey, file, (value) => {
                 progress[index] = value;
                 setProgress(
@@ -1789,7 +1794,7 @@ export default function VideoStudio({
       if (remaining === 0) return;
 
       const options = mediaType === "image"
-        ? { label: copy.media.image, maxBytes: 10 * 1024 * 1024, setUploading: setImageUploading, setProgress: setImageProgress, provider: target.variant.model.provider }
+        ? { label: copy.media.image, maxBytes: target.variant.model.provider === "byteplus" ? 29_000_000 : 10 * 1024 * 1024, setUploading: setImageUploading, setProgress: setImageProgress, provider: target.variant.model.provider }
         : mediaType === "video"
           ? { label: copy.media.video, maxBytes: 50 * 1024 * 1024, setUploading: setVideoUploading, setProgress: setVideoProgress }
           : { label: copy.media.audio, maxBytes: 50 * 1024 * 1024, setUploading: setAudioUploading, setProgress: setAudioProgress };

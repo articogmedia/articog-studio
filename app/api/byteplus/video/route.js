@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getBytePlusMaxReferenceImages } from "../../../../packages/studio/src/byteplusModelConfig.js";
-import { buildBytePlusContent } from "./content.mjs";
+import {
+  buildBytePlusContent,
+  isBytePlusGenerationBodyTooLarge,
+} from "./content.mjs";
 
 // Verify these endpoint paths and request/response fields against the BytePlus ModelArk docs.
 const BYTEPLUS_CONFIG = {
@@ -8,8 +11,6 @@ const BYTEPLUS_CONFIG = {
   path: "/contents/generations/tasks",
   defaultModel: "seedance-1-0-pro-250528",
 };
-const MAX_REQUEST_BODY_BYTES = 4 * 1024 * 1024;
-
 function redactApiKey(value, apiKey) {
   return String(value).replaceAll(apiKey, "[redacted]");
 }
@@ -28,9 +29,9 @@ function upstreamError(data, fallback, apiKey) {
 
 export async function POST(request) {
   const contentLength = Number(request.headers.get("content-length"));
-  if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BODY_BYTES) {
+  if (Number.isFinite(contentLength) && isBytePlusGenerationBodyTooLarge(contentLength)) {
     return NextResponse.json(
-      { error: "Image data exceeds the 4 MB request limit. Use smaller or fewer images." },
+      { error: "Generation request exceeds the 4 MiB application limit." },
       { status: 413 },
     );
   }
@@ -41,9 +42,9 @@ export async function POST(request) {
   } catch {
     return NextResponse.json({ error: "Request body could not be read." }, { status: 400 });
   }
-  if (new TextEncoder().encode(bodyText).byteLength > MAX_REQUEST_BODY_BYTES) {
+  if (isBytePlusGenerationBodyTooLarge(new TextEncoder().encode(bodyText).byteLength)) {
     return NextResponse.json(
-      { error: "Image data exceeds the 4 MB request limit. Use smaller or fewer images." },
+      { error: "Generation request exceeds the 4 MiB application limit." },
       { status: 413 },
     );
   }

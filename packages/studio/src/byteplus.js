@@ -20,6 +20,57 @@ export function fileToDataUrl(file) {
   });
 }
 
+export async function uploadBytePlusReferenceImage(apiKey, file, onProgress) {
+  if (!apiKey) throw new Error("A MuAPI API key is required to upload reference images.");
+
+  const uploadEndpoint = typeof window !== "undefined" && window.location.protocol === "file:"
+    ? "https://api.muapi.ai/app/get_file_upload_url"
+    : "/api/v1/get_upload_url";
+  const query = new URLSearchParams({
+    file_name: file.name,
+    content_type: file.type || "application/octet-stream",
+  });
+  const uploadInfo = await requestJson(`${uploadEndpoint}?${query}`, {
+    method: "GET",
+    headers: { "x-api-key": apiKey },
+  });
+  const uploadData = uploadInfo.data && typeof uploadInfo.data === "object"
+    ? { ...uploadInfo, ...uploadInfo.data }
+    : uploadInfo;
+  const fields = uploadData.fields;
+  const uploadTarget = fields?.["x-proxy-target-url"] || uploadData.upload_url || uploadData.url;
+  if (!uploadTarget || !fields || typeof fields !== "object") {
+    throw new Error("Storage did not return a signed image upload target.");
+  }
+  if (new URL(uploadTarget).protocol !== "https:") {
+    throw new Error("Storage returned an insecure image upload target.");
+  }
+
+  let publicUrl = uploadData.public_url || uploadData.file_url || uploadData.fileUrl;
+  if (!publicUrl && fields.key) {
+    const targetUrl = new URL(uploadTarget);
+    targetUrl.pathname = `${targetUrl.pathname.replace(/\/+$/, "")}/${String(fields.key)
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/")}`;
+    targetUrl.search = "";
+    publicUrl = targetUrl.toString();
+  }
+  if (typeof publicUrl !== "string" || !publicUrl.startsWith("https://")) {
+    throw new Error("Storage did not return a public image URL for BytePlus.");
+  }
+
+  const formData = new FormData();
+  for (const [name, value] of Object.entries(fields)) {
+    if (name !== "x-proxy-target-url") formData.append(name, String(value));
+  }
+  formData.append("file", file);
+  onProgress?.(1);
+  await fetch(uploadTarget, { method: "POST", body: formData, mode: "no-cors" });
+  onProgress?.(100);
+  return publicUrl;
+}
+
 export function generateBytePlusImage({ model, prompt, size, n = 1, image }) {
   return requestJson("/api/byteplus/image", {
     method: "POST",
