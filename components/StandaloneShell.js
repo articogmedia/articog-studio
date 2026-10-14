@@ -739,11 +739,11 @@ export default function StandaloneShell({ locale = 'en' }) {
 
             {/* Logo & Title */}
             <div className="flex items-center gap-2.5">
-              <div className="h-8 aspect-[4/1] overflow-hidden shrink-0">
-                <img src="/articog-logo.png" alt="Articog" className="w-full h-full object-cover" />
+              <div className="w-9 h-9 rounded-full overflow-hidden ring-1 ring-white/25 bg-black shrink-0">
+                <img src="/articog-logo.png" alt="Articog" className="w-full h-full object-cover scale-[1.15]" />
               </div>
-              <span className="hidden sm:block text-white/55 text-sm font-normal">
-                Studio
+              <span className="text-sm font-bold tracking-tight hidden sm:block text-white">
+                {copy.shell.brand}
               </span>
             </div>
           </div>
