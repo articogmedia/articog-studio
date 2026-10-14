@@ -43,6 +43,7 @@ import {
   getGroupedVideoSelectionAdjustments,
 } from "../groupedVideoParameters.js";
 import { migrateSeedanceResolutionSelection } from "../seedanceParameters.js";
+import { reportUnavailableReferenceUpload } from "../videoUploadMessages.js";
 import { getVideoAspectRatioLabel, getVideoDurationLabel, getVideoModeDescription } from "../videoModelCopy.js";
 import {
   buildReferenceParams,
@@ -1747,13 +1748,12 @@ export default function VideoStudio({
       if (!target) {
         const family = videoModelCatalog.familyByVariantId.get(selectionRef.current.selectedModel) ||
           videoModelCatalog.familyById.get(selectionRef.current.selectedFamilyId);
-        if (mediaType === "image") {
-          if (!family?.variants.i2v?.length) {
-            setImageInputMessage(`${family?.name || "This model"} doesn't support image input.`);
-          }
-        } else {
-          toast.error(`${family.name} does not support ${mediaType} references.`);
-        }
+        reportUnavailableReferenceUpload(
+          mediaType,
+          family,
+          setImageInputMessage,
+          toast.error,
+        );
         return;
       }
       if (mediaType === "image") setImageInputMessage("");
@@ -2914,7 +2914,7 @@ export default function VideoStudio({
                 />
               )}
               {imageInputMessage && (
-                <span className="text-xs text-white/60" role="status">{imageInputMessage}</span>
+                <span className="text-xs text-amber-300" role="status">{imageInputMessage}</span>
               )}
                 </>
               )}
