@@ -19,6 +19,25 @@ function extractUrl(value) {
   return null;
 }
 
+function redact(value, apiKey) {
+  return apiKey && typeof value === "string" ? value.replaceAll(apiKey, "[redacted]") : value;
+}
+
+export function normalizeBytePlusProviderError(data, fallback, apiKey) {
+  const error = data?.error;
+  const code = error?.code || data?.code;
+  const message = error?.message || (typeof error === "string" ? error : null) || data?.message || fallback;
+  const requestId = error?.request_id || error?.requestId || data?.request_id || data?.requestId;
+  const safeCode = code ? redact(String(code), apiKey) : null;
+  const safeMessage = redact(String(message), apiKey);
+  const safeRequestId = requestId ? redact(String(requestId), apiKey) : null;
+  return {
+    error: safeCode ? `${safeCode}: ${safeMessage}` : safeMessage,
+    ...(safeCode ? { code: safeCode } : {}),
+    ...(safeRequestId ? { request_id: safeRequestId } : {}),
+  };
+}
+
 export function extractBytePlusTaskId(data) {
   const task = unwrapTask(data);
   const id = task?.id || task?.task_id;

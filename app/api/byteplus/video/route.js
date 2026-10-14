@@ -4,7 +4,7 @@ import {
   buildBytePlusContent,
   isBytePlusGenerationBodyTooLarge,
 } from "./content.mjs";
-import { extractBytePlusTaskId } from "./taskResponse.mjs";
+import { extractBytePlusTaskId, normalizeBytePlusProviderError } from "./taskResponse.mjs";
 
 // Verify these endpoint paths and request/response fields against the BytePlus ModelArk docs.
 const BYTEPLUS_CONFIG = {
@@ -12,22 +12,6 @@ const BYTEPLUS_CONFIG = {
   path: "/contents/generations/tasks",
   defaultModel: "seedance-1-0-pro-250528",
 };
-function redactApiKey(value, apiKey) {
-  return String(value).replaceAll(apiKey, "[redacted]");
-}
-
-function upstreamError(data, fallback, apiKey) {
-  const error = data?.error;
-  const code = error?.code || data?.code;
-  const message = error?.message || (typeof error === "string" ? error : null) || data?.message || fallback;
-  const safeCode = code ? redactApiKey(code, apiKey) : null;
-  const safeMessage = redactApiKey(message, apiKey);
-  return {
-    error: safeCode ? `${safeCode}: ${safeMessage}` : safeMessage,
-    ...(safeCode ? { code: safeCode } : {}),
-  };
-}
-
 export async function POST(request) {
   const contentLength = Number(request.headers.get("content-length"));
   if (Number.isFinite(contentLength) && isBytePlusGenerationBodyTooLarge(contentLength)) {
@@ -130,7 +114,7 @@ export async function POST(request) {
     }
     if (!response.ok) {
       return NextResponse.json(
-        upstreamError(data, response.statusText, apiKey),
+        normalizeBytePlusProviderError(data, response.statusText, apiKey),
         { status: response.status },
       );
     }

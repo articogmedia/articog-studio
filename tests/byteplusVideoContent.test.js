@@ -151,6 +151,24 @@ test('BytePlus failed task preserves provider code and message for the user', as
     });
 });
 
+test('BytePlus image moderation errors preserve code, safe message and request ID without secrets', async () => {
+    const { normalizeBytePlusProviderError } = await import('../app/api/byteplus/video/taskResponse.mjs');
+    const apiKey = 'private-test-api-key';
+
+    assert.deepEqual(normalizeBytePlusProviderError({
+        error: {
+            code: 'InputImageSensitiveContentDetect',
+            message: 'Input image may contain sensitive information. Request ID: req-123.',
+            request_id: 'req-123',
+            debug: apiKey,
+        },
+    }, 'Bad Request', apiKey), {
+        error: 'InputImageSensitiveContentDetect: Input image may contain sensitive information. Request ID: req-123.',
+        code: 'InputImageSensitiveContentDetect',
+        request_id: 'req-123',
+    });
+});
+
 test('BytePlus succeeded task without output returns an actionable diagnostic', async () => {
     const { parseBytePlusTaskResponse } = await import('../app/api/byteplus/video/taskResponse.mjs');
 

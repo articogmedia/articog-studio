@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
-import { parseBytePlusTaskResponse } from "../taskResponse.mjs";
+import { normalizeBytePlusProviderError, parseBytePlusTaskResponse } from "../taskResponse.mjs";
 
 // Verify these endpoint paths and request/response fields against the BytePlus ModelArk docs.
 const BYTEPLUS_CONFIG = {
   baseUrl: process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3",
   path: "/contents/generations/tasks",
 };
-
-function upstreamMessage(data, fallback, apiKey) {
-  const message = data?.error?.message || data?.error || data?.message || fallback;
-  return String(message).replaceAll(apiKey, "[redacted]");
-}
 
 export async function GET(request, { params }) {
   const apiKey = process.env.BYTEPLUS_API_KEY;
@@ -33,7 +28,7 @@ export async function GET(request, { params }) {
     }
     if (!response.ok) {
       return NextResponse.json(
-        { error: upstreamMessage(data, response.statusText, apiKey) },
+        normalizeBytePlusProviderError(data, response.statusText, apiKey),
         { status: response.status },
       );
     }
