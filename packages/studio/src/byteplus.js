@@ -49,6 +49,9 @@ export async function uploadBytePlusReferenceImage(file, onProgress) {
     body: uploadBody,
   });
   if (!response.ok) {
+    if ([400, 401, 403].includes(response.status)) {
+      throw new Error("Supabase signed upload URL expired or was rejected. Please upload the image again.");
+    }
     throw new Error(`Supabase image upload failed (${response.status}).`);
   }
   onProgress?.(90);

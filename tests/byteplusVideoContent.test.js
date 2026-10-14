@@ -110,12 +110,12 @@ test('generation route request-size guard rejects bodies over 4 MiB', async () =
 const storageConfig = {
     supabaseUrl: 'https://project-ref.supabase.co',
     serviceRoleKey: 'server-only-supabase-service-role',
-    bucket: 'byteplus-seedance-references',
+    bucket: 'byteplus-images',
 };
 const privateBucket = {
-    id: 'byteplus-seedance-references',
+    id: 'byteplus-images',
     public: false,
-    file_size_limit: 29_000_000,
+    file_size_limit: 29 * 1024 * 1024,
     allowed_mime_types: ['image/png', 'image/jpeg'],
 };
 const jsonResponse = (body, status = 200) => ({
@@ -138,6 +138,7 @@ test('Supabase upload tickets reject invalid MIME types and oversized images', a
     const common = { ...storageConfig, fileName: 'reference.png', size: 100, fetchImpl: async () => { throw new Error('must not call storage'); } };
 
     await assert.rejects(createSupabaseUploadTicket({ ...common, contentType: 'image/svg+xml' }), /Unsupported image type/);
+    await assert.rejects(createSupabaseUploadTicket({ ...common, contentType: 'image/gif' }), /Use JPEG, PNG, or WebP/);
     await assert.rejects(createSupabaseUploadTicket({ ...common, contentType: 'image/png', size: MAX_REFERENCE_IMAGE_BYTES + 1 }), /smaller than 30 MB/);
 });
 
@@ -154,6 +155,11 @@ test('Supabase upload tickets reject public or unbounded buckets', async () => {
         ...storageConfig,
         fileName: 'reference.png', contentType: 'image/png', size: 100,
         fetchImpl: responseFor({ ...privateBucket, file_size_limit: null }),
+    }), /file size limit/);
+    await assert.rejects(createSupabaseUploadTicket({
+        ...storageConfig,
+        fileName: 'reference.png', contentType: 'image/png', size: 100,
+        fetchImpl: responseFor({ ...privateBucket, file_size_limit: 30 * 1024 * 1024 + 1 }),
     }), /file size limit/);
 });
 
@@ -247,24 +253,105 @@ test('BytePlus reference uploader reports Supabase upload failures without retur
     }
 });
 
+test('BytePlus reference uploader explains when a signed upload URL has expired', async () => {
+    const { uploadBytePlusReferenceImage } = await import('../packages/studio/src/byteplus.js');
+    const originalFetch = global.fetch;
+    global.fetch = async (url) => String(url) === '/api/byteplus/upload-url'
+        ? jsonResponse({
+            path: 'seedance/12345678-1234-4234-8234-123456789abc.png',
+            uploadUrl: 'https://project-ref.supabase.co/storage/v1/object/upload/sign/bucket/path?token=expired',
+        })
+        : { ok: false, status: 403 };
+
+    try {
+        const file = new File([new Uint8Array([137, 80, 78, 71])], 'reference.png', { type: 'image/png' });
+        await assert.rejects(uploadBytePlusReferenceImage(file), /signed upload URL expired or was rejected/);
+    } finally {
+        global.fetch = originalFetch;
+    }
+});
+
+test('six reference files each receive a signed upload and private read URL', async () => {
+    const { uploadBytePlusReferenceImage } = await import('../packages/studio/src/byteplus.js');
+    const originalFetch = global.fetch;
+    const calls = [];
+    global.fetch = async (url, options) => {
+        const urlString = String(url);
+        calls.push({ url: urlString, options });
+        if (urlString === '/api/byteplus/upload-url') {
+            const body = JSON.parse(options.body);
+            if (body.action === 'create') {
+                const suffix = body.fileName.replace('.png', '');
+                return jsonResponse({
+                    path: `seedance/${suffix}-1234-4234-8234-123456789abc.png`,
+                    uploadUrl: `https://project-ref.supabase.co/storage/v1/object/upload/sign/bucket/${suffix}.png?token=upload`,
+                });
+            }
+            return jsonResponse({ signedUrl: `https://project-ref.supabase.co/storage/v1/object/sign/bucket/${JSON.parse(options.body).path}?token=read` });
+        }
+        return { ok: true, status: 200 };
+    };
+
+    try {
+        const files = Array.from({ length: 6 }, (_, index) => new File(
+            [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])],
+            `ref-${index + 1}.png`,
+            { type: 'image/png' },
+        ));
+        const signedUrls = await Promise.all(files.map((file) => uploadBytePlusReferenceImage(file)));
+
+        assert.equal(signedUrls.length, 6);
+        assert.equal(new Set(signedUrls).size, 6);
+        assert.equal(calls.filter(({ url }) => url === '/api/byteplus/upload-url').length, 12);
+        assert.equal(calls.filter(({ options }) => options.method === 'PUT').length, 6);
+    } finally {
+        global.fetch = originalFetch;
+    }
+});
+
 test('Supabase upload ticket uses server credentials and never returns them', async () => {
     const { createSupabaseUploadTicket } = await import('../app/api/byteplus/upload-url/supabaseStorage.mjs');
     let callIndex = 0;
     const result = await createSupabaseUploadTicket({
-        ...storageConfig,
+        supabaseUrl: storageConfig.supabaseUrl,
+        serviceRoleKey: storageConfig.serviceRoleKey,
         fileName: 'reference.png', contentType: 'image/png', size: 100,
         id: '12345678-1234-4234-8234-123456789abc',
         fetchImpl: async (url, options) => {
             assert.equal(options.headers.apikey, storageConfig.serviceRoleKey);
             assert.equal(options.headers.Authorization, `Bearer ${storageConfig.serviceRoleKey}`);
             callIndex += 1;
+            if (callIndex === 1) assert.match(url, /\/bucket\/byteplus-images$/);
+            if (callIndex === 2) assert.match(url, /\/byteplus-images\/seedance\//);
             return callIndex === 1
                 ? jsonResponse(privateBucket)
-                : jsonResponse({ url: '/object/upload/sign/byteplus-seedance-references/seedance/file.png?token=upload-token' });
+                : jsonResponse({ url: '/object/upload/sign/byteplus-images/seedance/file.png?token=upload-token' });
         },
     });
 
     assert.equal(result.path, 'seedance/12345678-1234-4234-8234-123456789abc.png');
     assert.match(result.uploadUrl, /token=upload-token/);
     assert.equal(JSON.stringify(result).includes(storageConfig.serviceRoleKey), false);
+});
+
+test('Supabase signed read URLs remain valid for 24 hours for BytePlus retrieval', async () => {
+    const { createSupabaseReadUrl, SIGNED_READ_URL_TTL_SECONDS } = await import('../app/api/byteplus/upload-url/supabaseStorage.mjs');
+    let signRequest;
+    let requestCount = 0;
+    const signedUrl = await createSupabaseReadUrl({
+        ...storageConfig,
+        path: 'seedance/12345678-1234-4234-8234-123456789abc.png',
+        fetchImpl: async (url, options) => {
+            requestCount += 1;
+            if (requestCount === 1) return jsonResponse({ metadata: { size: 12, mimetype: 'image/png' } });
+            if (requestCount === 2) return jsonResponse({ value: true });
+            signRequest = JSON.parse(options.body);
+            return jsonResponse({ signedURL: '/object/sign/byteplus-images/seedance/ref.png?token=read' });
+        },
+    });
+
+    assert.equal(SIGNED_READ_URL_TTL_SECONDS, 24 * 60 * 60);
+    assert.equal(signRequest.expiresIn, 24 * 60 * 60);
+    assert.equal(new URL(signedUrl).protocol, 'https:');
+    assert.match(signedUrl, /token=read/);
 });

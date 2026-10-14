@@ -1,17 +1,13 @@
 import { randomUUID } from "node:crypto";
 
 export const MAX_REFERENCE_IMAGE_BYTES = 29_000_000;
-export const SIGNED_READ_URL_TTL_SECONDS = 60 * 60;
+const MAX_BUCKET_FILE_SIZE_BYTES = 30 * 1024 * 1024;
+export const SIGNED_READ_URL_TTL_SECONDS = 24 * 60 * 60;
 
 const IMAGE_TYPES = Object.freeze({
   "image/jpeg": { extension: "jpg", signature: (bytes) => bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff },
   "image/png": { extension: "png", signature: (bytes) => bytes.subarray(0, 8).join(",") === "137,80,78,71,13,10,26,10" },
   "image/webp": { extension: "webp", signature: (bytes) => bytes.subarray(0, 4).join(",") === "82,73,70,70" && bytes.subarray(8, 12).join(",") === "87,69,66,80" },
-  "image/gif": { extension: "gif", signature: (bytes) => ["71,73,70,56,55,97", "71,73,70,56,57,97"].includes(bytes.subarray(0, 6).join(",")) },
-  "image/bmp": { extension: "bmp", signature: (bytes) => bytes[0] === 0x42 && bytes[1] === 0x4d },
-  "image/tiff": { extension: "tiff", signature: (bytes) => ["73,73,42,0", "77,77,0,42"].includes(bytes.subarray(0, 4).join(",")) },
-  "image/heic": { extension: "heic", signature: isHeifSignature },
-  "image/heif": { extension: "heif", signature: isHeifSignature },
 });
 
 export class StorageUploadError extends Error {
@@ -19,11 +15,6 @@ export class StorageUploadError extends Error {
     super(message);
     this.status = status;
   }
-}
-
-function isHeifSignature(bytes) {
-  return bytes.subarray(4, 8).join(",") === "102,116,121,112" &&
-    ["104,101,105,99", "104,101,105,120", "104,101,118,99", "104,101,118,120", "109,105,102,49", "109,115,102,49"].includes(bytes.subarray(8, 12).join(","));
 }
 
 function getStorageConfig({ supabaseUrl, serviceRoleKey, bucket }) {
@@ -42,7 +33,7 @@ function getStorageConfig({ supabaseUrl, serviceRoleKey, bucket }) {
   if (parsedUrl.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(parsedUrl.hostname)) {
     throw new StorageUploadError("SUPABASE_URL must use HTTPS.", 503);
   }
-  const bucketId = bucket || "byteplus-seedance-references";
+  const bucketId = bucket || "byteplus-images";
   if (!/^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$/.test(bucketId)) {
     throw new StorageUploadError("BYTEPLUS_REFERENCE_BUCKET is invalid.", 503);
   }
@@ -105,8 +96,8 @@ async function verifyPrivateBucket({ config, contentType, fileSize, fetchImpl })
     throw new StorageUploadError("The BytePlus reference-image bucket must be private.", 503);
   }
   const bucketSizeLimit = Number(bucketInfo.file_size_limit);
-  if (bucketInfo.file_size_limit === null || !Number.isInteger(bucketSizeLimit) || bucketSizeLimit > MAX_REFERENCE_IMAGE_BYTES) {
-    throw new StorageUploadError(`Set the private bucket file size limit to ${MAX_REFERENCE_IMAGE_BYTES} bytes or less.`, 503);
+  if (bucketInfo.file_size_limit === null || !Number.isInteger(bucketSizeLimit) || bucketSizeLimit > MAX_BUCKET_FILE_SIZE_BYTES) {
+    throw new StorageUploadError(`Set the private bucket file size limit to ${MAX_BUCKET_FILE_SIZE_BYTES} bytes or less.`, 503);
   }
   if (fileSize > bucketSizeLimit) {
     throw new StorageUploadError("Image exceeds the configured Supabase Storage bucket size limit.");
@@ -122,7 +113,7 @@ function validateImageMetadata({ fileName, contentType, size }) {
   }
   const imageType = IMAGE_TYPES[contentType];
   if (!imageType) {
-    throw new StorageUploadError("Unsupported image type. Use JPEG, PNG, WebP, GIF, BMP, TIFF, HEIC, or HEIF.");
+    throw new StorageUploadError("Unsupported image type. Use JPEG, PNG, or WebP.");
   }
   if (!Number.isInteger(size) || size < 1 || size > MAX_REFERENCE_IMAGE_BYTES) {
     throw new StorageUploadError("Each reference image must be smaller than 30 MB.");
@@ -178,7 +169,7 @@ export async function createSupabaseReadUrl({
   fetchImpl = fetch,
 }) {
   const config = getStorageConfig({ supabaseUrl, serviceRoleKey, bucket });
-  const match = typeof path === "string" && path.match(/^seedance\/([0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})\.(jpg|png|webp|gif|bmp|tiff|heic|heif)$/i);
+  const match = typeof path === "string" && path.match(/^seedance\/([0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})\.(jpg|png|webp)$/i);
   if (!match) throw new StorageUploadError("Invalid reference image path.");
   const contentType = Object.keys(IMAGE_TYPES).find((type) => IMAGE_TYPES[type].extension === match[2].toLowerCase());
   if (!contentType) throw new StorageUploadError("Invalid reference image type.");
