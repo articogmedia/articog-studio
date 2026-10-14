@@ -1015,7 +1015,11 @@ export default function VideoStudio({
         ? getResolutionsForI2VModel(modelId)
         : getResolutionsForVideoModel(modelId);
       if (resolutions.length > 0) {
-        setSelectedResolution(resolutions[0]);
+        setSelectedResolution(
+          model?.provider === "byteplus"
+            ? model.inputs?.resolution?.default ?? resolutions[0]
+            : resolutions[0],
+        );
         setShowResolution(true);
       } else {
         setShowResolution(false);
@@ -2259,6 +2263,8 @@ export default function VideoStudio({
               prompt: trimmedPrompt,
               imageUrls: i2vParams.images_list || [i2vParams.image_url].filter(Boolean),
               ratio: selectedAr,
+              duration: selectedDuration,
+              resolution: selectedResolution,
             })
           : await generateI2V(apiKey, i2vParams);
         if (!res?.url) throw new Error(copy.errors.noVideoUrlReturned);
@@ -2275,6 +2281,7 @@ export default function VideoStudio({
           ...(!grouped ? {
             ...(aspectRatios.length > 0 ? { aspect_ratio: selectedAr } : {}),
             duration: selectedDuration,
+            ...(currentModel?.provider === "byteplus" ? { resolution: selectedResolution } : {}),
           } : {}),
           ...groupedHistorySettings,
           timestamp: new Date().toISOString(),
@@ -2316,6 +2323,8 @@ export default function VideoStudio({
               prompt: trimmedPrompt,
               imageUrls: params.images_list || [params.image_url].filter(Boolean),
               ratio: selectedAr,
+              duration: selectedDuration,
+              resolution: selectedResolution,
             })
           : await generateVideo(apiKey, params);
         if (!res?.url) throw new Error(copy.errors.noVideoUrlReturned);
@@ -2332,6 +2341,7 @@ export default function VideoStudio({
           ...(!grouped && !selectedVeoTool ? {
             aspect_ratio: selectedAr,
             duration: selectedDuration,
+            ...(currentModel?.provider === "byteplus" ? { resolution: selectedResolution } : {}),
           } : {}),
           ...groupedHistorySettings,
           timestamp: new Date().toISOString(),

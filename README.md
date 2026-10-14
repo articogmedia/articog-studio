@@ -54,6 +54,18 @@ Consumer AI image/video platforms almost all run on paid monthly subscriptions �
 - [Kling Video API examples](https://github.com/Anil-matcha/Kling-Video-API) — Kling text-to-video, image-to-video, and motion control.
 - [Qwen Image API examples](https://github.com/Anil-matcha/Qwen-Image-API) — Qwen image generation, editing, and LoRA workflows through Muapi.
 
+### BytePlus Seedance 2.5
+
+To use BytePlus ModelArk Seedance 2.5, set these values in `.env.local`:
+
+```dotenv
+BYTEPLUS_API_KEY=your-byteplus-api-key
+BYTEPLUS_BASE_URL=https://ark.ap-southeast.bytepluses.com/api/v3
+BYTEPLUS_SEEDANCE_MODEL=dreamina-seedance-2-5-260628
+```
+
+Video Studio supports Seedance 2.5 durations from 4 to 30 seconds and 480p, 720p, and 1080p output. See the [official ModelArk Seedance 2.5 guide](https://docs.byteplus.com/en/docs/ModelArk/seedance-2-5) for model constraints.
+
 ## Related Projects
 
 This is a curated set of high-value hubs, popular distribution tools, and model-specific integrations rather than a directory of every related repository.

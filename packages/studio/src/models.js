@@ -10224,7 +10224,23 @@ export const t2vModels = [
     "name": "Seedance 2.5 (BytePlus)",
     "endpoint": BYTEPLUS_SEEDANCE_MODEL_ID,
     "inputs": {
-      "prompt": { "type": "string", "title": "Prompt", "name": "prompt" }
+      "prompt": { "type": "string", "title": "Prompt", "name": "prompt" },
+      "duration": {
+        "type": "int",
+        "title": "Duration",
+        "name": "duration",
+        "enum": [5, 8, 10, 13, 15],
+        "default": 13,
+        "minValue": 4,
+        "maxValue": 30
+      },
+      "resolution": {
+        "type": "string",
+        "title": "Resolution",
+        "name": "resolution",
+        "enum": ["720p", "1080p"],
+        "default": "1080p"
+      }
     },
     "provider": "byteplus",
     "provider_name": "BytePlus ModelArk"
@@ -27459,6 +27475,22 @@ export const i2vModels = [
         "name": "images_list",
         "maxItems": BYTEPLUS_SEEDANCE_MAX_REFERENCE_IMAGES,
         "items": { "type": "string" }
+      },
+      "duration": {
+        "type": "int",
+        "title": "Duration",
+        "name": "duration",
+        "enum": [5, 8, 10, 13, 15],
+        "default": 13,
+        "minValue": 4,
+        "maxValue": 30
+      },
+      "resolution": {
+        "type": "string",
+        "title": "Resolution",
+        "name": "resolution",
+        "enum": ["720p", "1080p"],
+        "default": "1080p"
       }
     },
     "provider": "byteplus",

@@ -30,7 +30,7 @@ export function generateBytePlusImage({ model, prompt, size, n = 1, image }) {
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-export async function generateBytePlusVideo({ model, prompt, imageUrls, imageUrl, ratio }) {
+export async function generateBytePlusVideo({ model, prompt, imageUrls, imageUrl, ratio, duration, resolution }) {
   const urls = Array.isArray(imageUrls) && imageUrls.length > 0
     ? imageUrls
     : imageUrl
@@ -39,7 +39,14 @@ export async function generateBytePlusVideo({ model, prompt, imageUrls, imageUrl
   const task = await requestJson("/api/byteplus/video", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model, prompt, image_urls: urls, ...(ratio ? { ratio } : {}) }),
+    body: JSON.stringify({
+      model,
+      prompt,
+      image_urls: urls,
+      ...(ratio ? { ratio } : {}),
+      ...(duration !== undefined ? { duration } : {}),
+      ...(resolution !== undefined ? { resolution } : {}),
+    }),
   });
   if (!task.id) throw new Error("BytePlus did not return a video task ID.");
 

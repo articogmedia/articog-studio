@@ -67,6 +67,21 @@ export async function POST(request) {
   if (typeof input.prompt !== "string" || !input.prompt.trim()) {
     return NextResponse.json({ error: "Prompt is required." }, { status: 400 });
   }
+  if (input.duration !== undefined && (
+    !Number.isInteger(input.duration) ||
+    (input.duration !== -1 && (input.duration < 4 || input.duration > 30))
+  )) {
+    return NextResponse.json(
+      { error: "Duration must be an integer from 4 to 30 seconds, or -1 for automatic duration." },
+      { status: 400 },
+    );
+  }
+  if (input.resolution !== undefined && !["480p", "720p", "1080p"].includes(input.resolution)) {
+    return NextResponse.json(
+      { error: "Resolution must be one of: 480p, 720p, or 1080p." },
+      { status: 400 },
+    );
+  }
 
   const imageUrls = input.image_urls === undefined
     ? typeof input.image_url === "string" && input.image_url.trim()
@@ -90,6 +105,8 @@ export async function POST(request) {
     content: builtContent.content,
     ...builtContent.extraBody,
     ...(typeof ratio === "string" && ratio.trim() ? { ratio } : {}),
+    ...(input.duration !== undefined ? { duration: input.duration } : {}),
+    ...(input.resolution !== undefined ? { resolution: input.resolution } : {}),
   };
 
   try {
