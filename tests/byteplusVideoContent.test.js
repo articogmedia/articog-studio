@@ -113,7 +113,7 @@ test('BytePlus reference images upload directly to signed storage and return its
     const requests = [];
     global.fetch = async (url, options) => {
         requests.push({ url, options });
-        if (String(url).startsWith('/api/v1/get_upload_url')) {
+        if (String(url).startsWith('/api/byteplus/upload-url')) {
             return {
                 ok: true,
                 json: async () => ({
@@ -128,11 +128,11 @@ test('BytePlus reference images upload directly to signed storage and return its
 
     try {
         const file = new File(['image-bytes'], 'reference.png', { type: 'image/png' });
-        const uploadedUrl = await uploadBytePlusReferenceImage('muapi-test-key', file);
+        const uploadedUrl = await uploadBytePlusReferenceImage(file);
 
         assert.equal(uploadedUrl, 'https://images.s3.amazonaws.com/reference.png');
         assert.equal(requests.length, 2);
-        assert.equal(requests[0].options.headers['x-api-key'], 'muapi-test-key');
+        assert.equal(requests[0].options.headers, undefined);
         assert.equal(requests[1].url, 'https://images.s3.amazonaws.com');
         assert.equal(requests[1].options.mode, 'no-cors');
         assert.equal(requests[1].options.body.get('x-proxy-target-url'), null);
@@ -140,4 +140,44 @@ test('BytePlus reference images upload directly to signed storage and return its
     } finally {
         global.fetch = originalFetch;
     }
+});
+
+test('signed upload route reports missing MUAPI_KEY configuration without calling MuAPI', async () => {
+    const { requestMuapiSignedUpload } = await import('../app/api/byteplus/upload-url/muapiUploadUrl.mjs');
+    let called = false;
+
+    const result = await requestMuapiSignedUpload({
+        apiKey: '',
+        fileName: 'reference.png',
+        contentType: 'image/png',
+        fetchImpl: async () => { called = true; },
+    });
+
+    assert.equal(result.status, 503);
+    assert.match(result.body.error, /MUAPI_KEY is not configured/);
+    assert.equal(called, false);
+});
+
+test('signed upload route authenticates upstream with MUAPI_KEY and redacts it from responses', async () => {
+    const { requestMuapiSignedUpload } = await import('../app/api/byteplus/upload-url/muapiUploadUrl.mjs');
+    let sentKey;
+    const secret = 'server-only-muapi-key';
+
+    const result = await requestMuapiSignedUpload({
+        apiKey: secret,
+        fileName: 'reference.png',
+        contentType: 'image/png',
+        fetchImpl: async (url, options) => {
+            sentKey = options.headers['x-api-key'];
+            assert.match(url, /get_file_upload_url\?file_name=reference.png&content_type=image%2Fpng/);
+            return {
+                status: 200,
+                text: async () => JSON.stringify({ url: 'https://storage.example', token: secret }),
+            };
+        },
+    });
+
+    assert.equal(sentKey, secret);
+    assert.equal(result.status, 200);
+    assert.equal(result.body.token, '[redacted]');
 });

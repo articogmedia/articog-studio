@@ -1610,12 +1610,12 @@ export default function VideoStudio({
         const progress = new Array(selectedFiles.length).fill(0);
         const results = await Promise.allSettled(
           selectedFiles.map((file, index) => provider === "byteplus"
-            ? uploadBytePlusReferenceImage(apiKey, file, (value) => {
+            ? uploadBytePlusReferenceImage(file, (value) => {
                 progress[index] = value;
                 setProgress(
                   Math.round(progress.reduce((sum, item) => sum + item, 0) / progress.length),
                 );
-              })
+              }, apiKey)
             : uploadFile(apiKey, file, (value) => {
                 progress[index] = value;
                 setProgress(

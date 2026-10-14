@@ -20,19 +20,20 @@ export function fileToDataUrl(file) {
   });
 }
 
-export async function uploadBytePlusReferenceImage(apiKey, file, onProgress) {
-  if (!apiKey) throw new Error("A MuAPI API key is required to upload reference images.");
+export async function uploadBytePlusReferenceImage(file, onProgress, apiKey) {
+  const isElectron = typeof window !== "undefined" && window.location.protocol === "file:";
+  if (isElectron && !apiKey) throw new Error("A MuAPI API key is required to upload reference images in Electron.");
 
-  const uploadEndpoint = typeof window !== "undefined" && window.location.protocol === "file:"
+  const uploadEndpoint = isElectron
     ? "https://api.muapi.ai/app/get_file_upload_url"
-    : "/api/v1/get_upload_url";
+    : "/api/byteplus/upload-url";
   const query = new URLSearchParams({
     file_name: file.name,
     content_type: file.type || "application/octet-stream",
   });
   const uploadInfo = await requestJson(`${uploadEndpoint}?${query}`, {
     method: "GET",
-    headers: { "x-api-key": apiKey },
+    ...(isElectron ? { headers: { "x-api-key": apiKey } } : {}),
   });
   const uploadData = uploadInfo.data && typeof uploadInfo.data === "object"
     ? { ...uploadInfo, ...uploadInfo.data }
