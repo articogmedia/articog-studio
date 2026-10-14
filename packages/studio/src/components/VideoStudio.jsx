@@ -1615,7 +1615,7 @@ export default function VideoStudio({
                 setProgress(
                   Math.round(progress.reduce((sum, item) => sum + item, 0) / progress.length),
                 );
-              }, apiKey)
+              })
             : uploadFile(apiKey, file, (value) => {
                 progress[index] = value;
                 setProgress(

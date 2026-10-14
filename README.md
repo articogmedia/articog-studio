@@ -62,10 +62,12 @@ To use BytePlus ModelArk Seedance 2.5, set these values in `.env.local`:
 BYTEPLUS_API_KEY=your-byteplus-api-key
 BYTEPLUS_BASE_URL=https://ark.ap-southeast.bytepluses.com/api/v3
 BYTEPLUS_SEEDANCE_MODEL=dreamina-seedance-2-5-260628
-MUAPI_KEY=your-muapi-api-key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-server-only-supabase-service-role-key
+BYTEPLUS_REFERENCE_BUCKET=byteplus-seedance-references
 ```
 
-For deployed web uploads, configure `MUAPI_KEY` as a server-side Vercel environment variable. Do not use a `NEXT_PUBLIC_` prefix; the key is sent only by the server to MuAPI's authenticated upload-URL endpoint.
+Create the `byteplus-seedance-references` Storage bucket as **private**, with a 29,000,000-byte file-size limit and an image MIME allow-list (JPEG, PNG, WebP, GIF, BMP, TIFF, HEIC, and HEIF). Allow your deployed app origin in Supabase Storage CORS settings for direct browser uploads. Keep `SUPABASE_SERVICE_ROLE_KEY` server-side in Vercel; do not use a `NEXT_PUBLIC_` prefix. The app uploads directly with one-time signed upload URLs and gives BytePlus one-hour signed read URLs, so images are not publicly accessible from the bucket.
 
 Video Studio supports Seedance 2.5 durations from 4 to 30 seconds and 480p, 720p, and 1080p output. See the [official ModelArk Seedance 2.5 guide](https://docs.byteplus.com/en/docs/ModelArk/seedance-2-5) for model constraints.
 

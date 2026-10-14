@@ -20,56 +20,49 @@ export function fileToDataUrl(file) {
   });
 }
 
-export async function uploadBytePlusReferenceImage(file, onProgress, apiKey) {
-  const isElectron = typeof window !== "undefined" && window.location.protocol === "file:";
-  if (isElectron && !apiKey) throw new Error("A MuAPI API key is required to upload reference images in Electron.");
-
-  const uploadEndpoint = isElectron
-    ? "https://api.muapi.ai/app/get_file_upload_url"
-    : "/api/byteplus/upload-url";
-  const query = new URLSearchParams({
-    file_name: file.name,
-    content_type: file.type || "application/octet-stream",
+export async function uploadBytePlusReferenceImage(file, onProgress) {
+  if (!(file instanceof Blob)) throw new Error("Choose a valid reference image file.");
+  const uploadTicket = await requestJson("/api/byteplus/upload-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "create",
+      fileName: file.name,
+      contentType: file.type,
+      size: file.size,
+    }),
   });
-  const uploadInfo = await requestJson(`${uploadEndpoint}?${query}`, {
-    method: "GET",
-    ...(isElectron ? { headers: { "x-api-key": apiKey } } : {}),
-  });
-  const uploadData = uploadInfo.data && typeof uploadInfo.data === "object"
-    ? { ...uploadInfo, ...uploadInfo.data }
-    : uploadInfo;
-  const fields = uploadData.fields;
-  const uploadTarget = fields?.["x-proxy-target-url"] || uploadData.upload_url || uploadData.url;
-  if (!uploadTarget || !fields || typeof fields !== "object") {
-    throw new Error("Storage did not return a signed image upload target.");
+  if (typeof uploadTicket.uploadUrl !== "string" || typeof uploadTicket.path !== "string") {
+    throw new Error("Supabase Storage did not return a signed upload URL.");
   }
-  if (new URL(uploadTarget).protocol !== "https:") {
-    throw new Error("Storage returned an insecure image upload target.");
+  const uploadUrl = new URL(uploadTicket.uploadUrl);
+  if (uploadUrl.protocol !== "https:") {
+    throw new Error("Supabase Storage returned an insecure upload URL.");
   }
 
-  let publicUrl = uploadData.public_url || uploadData.file_url || uploadData.fileUrl;
-  if (!publicUrl && fields.key) {
-    const targetUrl = new URL(uploadTarget);
-    targetUrl.pathname = `${targetUrl.pathname.replace(/\/+$/, "")}/${String(fields.key)
-      .split("/")
-      .map(encodeURIComponent)
-      .join("/")}`;
-    targetUrl.search = "";
-    publicUrl = targetUrl.toString();
-  }
-  if (typeof publicUrl !== "string" || !publicUrl.startsWith("https://")) {
-    throw new Error("Storage did not return a public image URL for BytePlus.");
-  }
-
-  const formData = new FormData();
-  for (const [name, value] of Object.entries(fields)) {
-    if (name !== "x-proxy-target-url") formData.append(name, String(value));
-  }
-  formData.append("file", file);
   onProgress?.(1);
-  await fetch(uploadTarget, { method: "POST", body: formData, mode: "no-cors" });
+  const uploadBody = new FormData();
+  uploadBody.append("cacheControl", "3600");
+  uploadBody.append("", file);
+  const response = await fetch(uploadUrl.toString(), {
+    method: "PUT",
+    body: uploadBody,
+  });
+  if (!response.ok) {
+    throw new Error(`Supabase image upload failed (${response.status}).`);
+  }
+  onProgress?.(90);
+
+  const result = await requestJson("/api/byteplus/upload-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "complete", path: uploadTicket.path }),
+  });
+  if (typeof result.signedUrl !== "string" || !result.signedUrl.startsWith("https://")) {
+    throw new Error("Supabase Storage did not return a temporary image URL for BytePlus.");
+  }
   onProgress?.(100);
-  return publicUrl;
+  return result.signedUrl;
 }
 
 export function generateBytePlusImage({ model, prompt, size, n = 1, image }) {
