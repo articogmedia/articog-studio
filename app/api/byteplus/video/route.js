@@ -4,6 +4,7 @@ import {
   buildBytePlusContent,
   isBytePlusGenerationBodyTooLarge,
 } from "./content.mjs";
+import { extractBytePlusTaskId } from "./taskResponse.mjs";
 
 // Verify these endpoint paths and request/response fields against the BytePlus ModelArk docs.
 const BYTEPLUS_CONFIG = {
@@ -134,7 +135,7 @@ export async function POST(request) {
       );
     }
 
-    const id = data.id || data.task_id;
+    const id = extractBytePlusTaskId(data);
     if (!id) return NextResponse.json({ error: "BytePlus did not return a task ID." }, { status: 502 });
     return NextResponse.json({ id, task_id: id }, { status: response.status });
   } catch {

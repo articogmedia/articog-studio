@@ -107,6 +107,97 @@ test('generation route request-size guard rejects bodies over 4 MiB', async () =
     assert.equal(isBytePlusGenerationBodyTooLarge(BYTEPLUS_GENERATION_BODY_LIMIT_BYTES + 1), true);
 });
 
+test('BytePlus task creation response contains the documented task ID', async () => {
+    const { extractBytePlusTaskId } = await import('../app/api/byteplus/video/taskResponse.mjs');
+
+    assert.equal(extractBytePlusTaskId({ id: 'cgt-20261014-abc123' }), 'cgt-20261014-abc123');
+    assert.equal(extractBytePlusTaskId({ task_id: 'cgt-20261014-def456' }), 'cgt-20261014-def456');
+    assert.equal(extractBytePlusTaskId({}), null);
+});
+
+test('BytePlus queued and running task responses remain pending', async () => {
+    const { parseBytePlusTaskResponse } = await import('../app/api/byteplus/video/taskResponse.mjs');
+
+    assert.deepEqual(parseBytePlusTaskResponse({ id: 'cgt-1', status: 'queued' }), { id: 'cgt-1', status: 'queued' });
+    assert.deepEqual(parseBytePlusTaskResponse({ id: 'cgt-1', status: 'running' }), { id: 'cgt-1', status: 'running' });
+});
+
+test('BytePlus succeeded task parses the documented content.video_url object', async () => {
+    const { parseBytePlusTaskResponse } = await import('../app/api/byteplus/video/taskResponse.mjs');
+
+    assert.deepEqual(parseBytePlusTaskResponse({
+        id: 'cgt-1',
+        status: 'succeeded',
+        content: { video_url: 'https://cdn.byteplus.example/generated.mp4', last_frame_url: null, file_url: null },
+    }), {
+        id: 'cgt-1',
+        status: 'succeeded',
+        url: 'https://cdn.byteplus.example/generated.mp4',
+    });
+});
+
+test('BytePlus failed task preserves provider code and message for the user', async () => {
+    const { parseBytePlusTaskResponse } = await import('../app/api/byteplus/video/taskResponse.mjs');
+
+    assert.deepEqual(parseBytePlusTaskResponse({
+        id: 'cgt-1',
+        status: 'failed',
+        error: { code: 'InvalidParameter.TaskTypeMismatch', message: 'The task type does not match the input.' },
+    }), {
+        id: 'cgt-1',
+        status: 'failed',
+        code: 'InvalidParameter.TaskTypeMismatch',
+        error: 'The task type does not match the input.',
+    });
+});
+
+test('BytePlus succeeded task without output returns an actionable diagnostic', async () => {
+    const { parseBytePlusTaskResponse } = await import('../app/api/byteplus/video/taskResponse.mjs');
+
+    assert.deepEqual(parseBytePlusTaskResponse({ id: 'cgt-1', status: 'succeeded', content: {} }), {
+        id: 'cgt-1',
+        status: 'succeeded',
+        error: 'BytePlus marked this task succeeded but returned no content.video_url. Check the task in the BytePlus console and retry if needed.',
+    });
+});
+
+test('BytePlus polling waits through running and returns only after success includes a URL', async () => {
+    const { pollBytePlusVideoTask } = await import('../packages/studio/src/byteplus.js');
+    const statuses = [
+        { id: 'cgt-1', status: 'queued' },
+        { id: 'cgt-1', status: 'running' },
+        { id: 'cgt-1', status: 'succeeded', url: 'https://cdn.byteplus.example/video.mp4' },
+    ];
+    const waits = [];
+    const result = await pollBytePlusVideoTask('cgt-1', {
+        getTask: async () => statuses.shift(),
+        waitImpl: async (ms) => waits.push(ms),
+        pollIntervalMs: 10_000,
+        timeoutMs: 30 * 60 * 1000,
+    });
+
+    assert.equal(result.url, 'https://cdn.byteplus.example/video.mp4');
+    assert.equal(result.request_id, 'cgt-1');
+    assert.deepEqual(waits, [10_000, 10_000]);
+});
+
+test('BytePlus polling reports provider failure and completed tasks with no URL', async () => {
+    const { pollBytePlusVideoTask } = await import('../packages/studio/src/byteplus.js');
+
+    await assert.rejects(pollBytePlusVideoTask('cgt-failed', {
+        getTask: async () => ({ id: 'cgt-failed', status: 'failed', code: 'TaskFailed', error: 'Provider rejected the task.' }),
+        waitImpl: async () => {},
+    }), /TaskFailed: Provider rejected the task/);
+    await assert.rejects(pollBytePlusVideoTask('cgt-empty', {
+        getTask: async () => ({ id: 'cgt-empty', status: 'succeeded', error: 'Missing content.video_url. Check task details.' }),
+        waitImpl: async () => {},
+    }), /Missing content.video_url/);
+    await assert.rejects(pollBytePlusVideoTask('cgt-expired', {
+        getTask: async () => ({ id: 'cgt-expired', status: 'expired', error: 'Task expired.' }),
+        waitImpl: async () => {},
+    }), /Task expired/);
+});
+
 const storageConfig = {
     supabaseUrl: 'https://project-ref.supabase.co',
     serviceRoleKey: 'server-only-supabase-service-role',

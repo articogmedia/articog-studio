@@ -92,6 +92,37 @@ export function generateBytePlusImage({ model, prompt, size, n = 1, image }) {
 }
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+const BYTEPLUS_TASK_POLL_INTERVAL_MS = 10_000;
+const BYTEPLUS_TASK_TIMEOUT_MS = 30 * 60 * 1000;
+
+export async function pollBytePlusVideoTask(taskId, {
+  getTask = (id) => requestJson(`/api/byteplus/video/${encodeURIComponent(id)}`, { method: "GET" }),
+  waitImpl = wait,
+  pollIntervalMs = BYTEPLUS_TASK_POLL_INTERVAL_MS,
+  timeoutMs = BYTEPLUS_TASK_TIMEOUT_MS,
+} = {}) {
+  const deadline = Date.now() + timeoutMs;
+  let lastStatus = "unknown";
+  while (Date.now() < deadline) {
+    const result = await getTask(taskId);
+    const status = String(result.status || "unknown").toLowerCase();
+    lastStatus = status;
+    if (status === "succeeded") {
+      if (result.url) return { ...result, id: taskId, request_id: taskId };
+      throw new Error(result.error || "BytePlus marked the task successful without returning content.video_url.");
+    }
+    if (["failed", "expired", "cancelled", "canceled"].includes(status)) {
+      const message = result.error || result.message || `BytePlus video generation ${status}.`;
+      const codePrefix = result.code && !String(message).startsWith(`${result.code}:`)
+        ? `${result.code}: `
+        : "";
+      throw new Error(`${codePrefix}${message}`);
+    }
+    if (Date.now() + pollIntervalMs >= deadline) break;
+    await waitImpl(pollIntervalMs);
+  }
+  throw new Error(`BytePlus video generation timed out after 30 minutes (last task status: ${lastStatus}).`);
+}
 
 export async function generateBytePlusVideo({ model, prompt, imageUrls, imageUrl, ratio, duration, resolution }) {
   const urls = Array.isArray(imageUrls) && imageUrls.length > 0
@@ -112,22 +143,5 @@ export async function generateBytePlusVideo({ model, prompt, imageUrls, imageUrl
     }),
   });
   if (!task.id) throw new Error("BytePlus did not return a video task ID.");
-
-  const deadline = Date.now() + 10 * 60 * 1000;
-  while (Date.now() < deadline) {
-    await wait(3000);
-    const result = await requestJson(`/api/byteplus/video/${encodeURIComponent(task.id)}`, {
-      method: "GET",
-    });
-    const status = String(result.status || "").toLowerCase();
-    if (["succeeded", "success", "completed", "done"].includes(status)) {
-      if (result.url) return { ...result, id: task.id, request_id: task.id };
-      throw new Error("BytePlus completed the video task without returning a video URL.");
-    }
-    if (["failed", "error", "cancelled", "canceled"].includes(status)) {
-      throw new Error(result.message || `BytePlus video generation ${status}.`);
-    }
-  }
-
-  throw new Error("BytePlus video generation timed out.");
+  return pollBytePlusVideoTask(task.id);
 }

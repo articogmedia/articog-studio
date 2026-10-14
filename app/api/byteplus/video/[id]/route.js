@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseBytePlusTaskResponse } from "../taskResponse.mjs";
 
 // Verify these endpoint paths and request/response fields against the BytePlus ModelArk docs.
 const BYTEPLUS_CONFIG = {
@@ -9,22 +10,6 @@ const BYTEPLUS_CONFIG = {
 function upstreamMessage(data, fallback, apiKey) {
   const message = data?.error?.message || data?.error || data?.message || fallback;
   return String(message).replaceAll(apiKey, "[redacted]");
-}
-
-function getVideoUrl(data) {
-  const videoItem = Array.isArray(data.content)
-    ? data.content.find((item) => item?.type === "video_url" || item?.video_url)
-    : null;
-  const candidates = [
-    videoItem?.video_url,
-    data.video_url,
-    data.output?.video_url,
-    data.output?.url,
-    data.url,
-  ];
-  return candidates
-    .map((value) => typeof value === "string" ? value : value?.url)
-    .find(Boolean);
 }
 
 export async function GET(request, { params }) {
@@ -53,9 +38,16 @@ export async function GET(request, { params }) {
       );
     }
 
-    const status = data.status || data.task_status || "unknown";
-    const url = getVideoUrl(data);
-    return NextResponse.json({ id, status, ...(url ? { url } : {}) }, { status: response.status });
+    const task = parseBytePlusTaskResponse(data, id);
+    const normalizedTask = task.error
+      ? {
+          ...task,
+          ...(task.code ? { code: String(task.code).replaceAll(apiKey, "[redacted]") } : {}),
+          error: String(task.error).replaceAll(apiKey, "[redacted]"),
+        }
+      : task;
+    const responseStatus = task.status === "succeeded" && !task.url ? 502 : response.status;
+    return NextResponse.json(normalizedTask, { status: responseStatus });
   } catch {
     return NextResponse.json({ error: "Unable to reach BytePlus ModelArk." }, { status: 502 });
   }
