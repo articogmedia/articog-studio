@@ -271,6 +271,42 @@ test('BytePlus reference uploader explains when a signed upload URL has expired'
     }
 });
 
+test('BytePlus reference uploader identifies a failed Vercel upload-ticket request', async () => {
+    const { uploadBytePlusReferenceImage } = await import('../packages/studio/src/byteplus.js');
+    const originalFetch = global.fetch;
+    global.fetch = async () => { throw new TypeError('Failed to fetch'); };
+
+    try {
+        const file = new File([new Uint8Array([137, 80, 78, 71])], 'reference.png', { type: 'image/png' });
+        await assert.rejects(uploadBytePlusReferenceImage(file), /Supabase upload-ticket request failed: Failed to fetch/);
+    } finally {
+        global.fetch = originalFetch;
+    }
+});
+
+test('BytePlus reference uploader identifies a failed direct Supabase network request without exposing its signed URL', async () => {
+    const { uploadBytePlusReferenceImage } = await import('../packages/studio/src/byteplus.js');
+    const originalFetch = global.fetch;
+    const signedUrl = 'https://project-ref.supabase.co/storage/v1/object/upload/sign/bucket/path?token=private-ticket';
+    let calls = 0;
+    global.fetch = async () => {
+        calls += 1;
+        if (calls === 1) return jsonResponse({ path: 'seedance/12345678-1234-4234-8234-123456789abc.png', uploadUrl: signedUrl });
+        throw new TypeError('Failed to fetch');
+    };
+
+    try {
+        const file = new File([new Uint8Array([137, 80, 78, 71])], 'reference.png', { type: 'image/png' });
+        await assert.rejects(uploadBytePlusReferenceImage(file), (error) => {
+            assert.match(error.message, /Supabase direct upload failed before an HTTP response was received/);
+            assert.doesNotMatch(error.message, /private-ticket|project-ref/);
+            return true;
+        });
+    } finally {
+        global.fetch = originalFetch;
+    }
+});
+
 test('six reference files each receive a signed upload and private read URL', async () => {
     const { uploadBytePlusReferenceImage } = await import('../packages/studio/src/byteplus.js');
     const originalFetch = global.fetch;

@@ -22,16 +22,21 @@ export function fileToDataUrl(file) {
 
 export async function uploadBytePlusReferenceImage(file, onProgress) {
   if (!(file instanceof Blob)) throw new Error("Choose a valid reference image file.");
-  const uploadTicket = await requestJson("/api/byteplus/upload-url", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "create",
-      fileName: file.name,
-      contentType: file.type,
-      size: file.size,
-    }),
-  });
+  let uploadTicket;
+  try {
+    uploadTicket = await requestJson("/api/byteplus/upload-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "create",
+        fileName: file.name,
+        contentType: file.type,
+        size: file.size,
+      }),
+    });
+  } catch (error) {
+    throw new Error(`Supabase upload-ticket request failed: ${error.message || "The server could not be reached."}`);
+  }
   if (typeof uploadTicket.uploadUrl !== "string" || typeof uploadTicket.path !== "string") {
     throw new Error("Supabase Storage did not return a signed upload URL.");
   }
@@ -44,10 +49,15 @@ export async function uploadBytePlusReferenceImage(file, onProgress) {
   const uploadBody = new FormData();
   uploadBody.append("cacheControl", "3600");
   uploadBody.append("", file);
-  const response = await fetch(uploadUrl.toString(), {
-    method: "PUT",
-    body: uploadBody,
-  });
+  let response;
+  try {
+    response = await fetch(uploadUrl.toString(), {
+      method: "PUT",
+      body: uploadBody,
+    });
+  } catch {
+    throw new Error("Supabase direct upload failed before an HTTP response was received. Check the upload URL, network/TLS connectivity, and Supabase Storage CORS for this app origin.");
+  }
   if (!response.ok) {
     if ([400, 401, 403].includes(response.status)) {
       throw new Error("Supabase signed upload URL expired or was rejected. Please upload the image again.");
@@ -56,11 +66,16 @@ export async function uploadBytePlusReferenceImage(file, onProgress) {
   }
   onProgress?.(90);
 
-  const result = await requestJson("/api/byteplus/upload-url", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "complete", path: uploadTicket.path }),
-  });
+  let result;
+  try {
+    result = await requestJson("/api/byteplus/upload-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "complete", path: uploadTicket.path }),
+    });
+  } catch (error) {
+    throw new Error(`Supabase upload verification failed: ${error.message || "The server could not be reached."}`);
+  }
   if (typeof result.signedUrl !== "string" || !result.signedUrl.startsWith("https://")) {
     throw new Error("Supabase Storage did not return a temporary image URL for BytePlus.");
   }
