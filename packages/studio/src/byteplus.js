@@ -2,7 +2,11 @@ async function requestJson(url, options) {
   const response = await fetch(url, options);
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.error || data.message || `BytePlus request failed (${response.status}).`);
+    const message = data.error || data.message;
+    const codePrefix = data.code && !String(message || "").startsWith(`${data.code}:`)
+      ? `${data.code}: `
+      : "";
+    throw new Error(`${codePrefix}${message || `BytePlus request failed (${response.status}).`}`);
   }
   return data;
 }
@@ -26,11 +30,16 @@ export function generateBytePlusImage({ model, prompt, size, n = 1, image }) {
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-export async function generateBytePlusVideo({ model, prompt, imageUrl }) {
+export async function generateBytePlusVideo({ model, prompt, imageUrls, imageUrl, ratio }) {
+  const urls = Array.isArray(imageUrls) && imageUrls.length > 0
+    ? imageUrls
+    : imageUrl
+      ? [imageUrl]
+      : [];
   const task = await requestJson("/api/byteplus/video", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model, prompt, ...(imageUrl ? { image_url: imageUrl } : {}) }),
+    body: JSON.stringify({ model, prompt, image_urls: urls, ...(ratio ? { ratio } : {}) }),
   });
   if (!task.id) throw new Error("BytePlus did not return a video task ID.");
 

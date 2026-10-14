@@ -2257,7 +2257,8 @@ export default function VideoStudio({
           ? await generateBytePlusVideo({
               model: currentModel.endpoint,
               prompt: trimmedPrompt,
-              imageUrl: i2vParams.image_url || i2vParams.images_list?.[0],
+              imageUrls: i2vParams.images_list || [i2vParams.image_url].filter(Boolean),
+              ratio: selectedAr,
             })
           : await generateI2V(apiKey, i2vParams);
         if (!res?.url) throw new Error(copy.errors.noVideoUrlReturned);
@@ -2313,7 +2314,8 @@ export default function VideoStudio({
           ? await generateBytePlusVideo({
               model: currentModel.endpoint,
               prompt: trimmedPrompt,
-              imageUrl: params.image_url || params.images_list?.[0],
+              imageUrls: params.images_list || [params.image_url].filter(Boolean),
+              ratio: selectedAr,
             })
           : await generateVideo(apiKey, params);
         if (!res?.url) throw new Error(copy.errors.noVideoUrlReturned);
@@ -2868,6 +2870,11 @@ export default function VideoStudio({
                 progress={imageProgress}
                 type="image"
               />
+              {selectedModel === "byteplus-seedance-i2v" && (
+                <span className="w-full text-xs text-white/55">
+                  Refer to images as @Image1, @Image2 in your prompt.
+                </span>
+              )}
 
               {showEndImageUpload && !uploadedEndImageUrl && (
                 <ReferenceUploadButton

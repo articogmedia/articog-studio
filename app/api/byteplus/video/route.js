@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getBytePlusMaxReferenceImages } from "../../../../packages/studio/src/byteplusModelConfig.js";
+import { buildBytePlusContent } from "./content.mjs";
 
 // Verify these endpoint paths and request/response fields against the BytePlus ModelArk docs.
 const BYTEPLUS_CONFIG = {
@@ -6,13 +8,46 @@ const BYTEPLUS_CONFIG = {
   path: "/contents/generations/tasks",
   defaultModel: "seedance-1-0-pro-250528",
 };
+const MAX_REQUEST_BODY_BYTES = 4 * 1024 * 1024;
 
-function upstreamMessage(data, fallback, apiKey) {
-  const message = data?.error?.message || data?.error || data?.message || fallback;
-  return String(message).replaceAll(apiKey, "[redacted]");
+function redactApiKey(value, apiKey) {
+  return String(value).replaceAll(apiKey, "[redacted]");
+}
+
+function upstreamError(data, fallback, apiKey) {
+  const error = data?.error;
+  const code = error?.code || data?.code;
+  const message = error?.message || (typeof error === "string" ? error : null) || data?.message || fallback;
+  const safeCode = code ? redactApiKey(code, apiKey) : null;
+  const safeMessage = redactApiKey(message, apiKey);
+  return {
+    error: safeCode ? `${safeCode}: ${safeMessage}` : safeMessage,
+    ...(safeCode ? { code: safeCode } : {}),
+  };
 }
 
 export async function POST(request) {
+  const contentLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BODY_BYTES) {
+    return NextResponse.json(
+      { error: "Image data exceeds the 4 MB request limit. Use smaller or fewer images." },
+      { status: 413 },
+    );
+  }
+
+  let bodyText;
+  try {
+    bodyText = await request.text();
+  } catch {
+    return NextResponse.json({ error: "Request body could not be read." }, { status: 400 });
+  }
+  if (new TextEncoder().encode(bodyText).byteLength > MAX_REQUEST_BODY_BYTES) {
+    return NextResponse.json(
+      { error: "Image data exceeds the 4 MB request limit. Use smaller or fewer images." },
+      { status: 413 },
+    );
+  }
+
   const apiKey = process.env.BYTEPLUS_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "BytePlus API key is not configured." }, { status: 503 });
@@ -20,7 +55,7 @@ export async function POST(request) {
 
   let input;
   try {
-    input = await request.json();
+    input = JSON.parse(bodyText);
   } catch {
     return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
   }
@@ -33,10 +68,29 @@ export async function POST(request) {
     return NextResponse.json({ error: "Prompt is required." }, { status: 400 });
   }
 
-  const content = [{ type: "text", text: input.prompt }];
-  if (typeof input.image_url === "string" && input.image_url.trim()) {
-    content.push({ type: "image_url", image_url: { url: input.image_url } });
+  const imageUrls = input.image_urls === undefined
+    ? typeof input.image_url === "string" && input.image_url.trim()
+      ? [input.image_url]
+      : []
+    : input.image_urls;
+  let builtContent;
+  try {
+    builtContent = buildBytePlusContent({
+      prompt: input.prompt,
+      imageUrls,
+      maxImages: getBytePlusMaxReferenceImages(model),
+    });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  const ratio = builtContent.ratioOverride || input.ratio;
+  const requestBody = {
+    model,
+    content: builtContent.content,
+    ...builtContent.extraBody,
+    ...(typeof ratio === "string" && ratio.trim() ? { ratio } : {}),
+  };
 
   try {
     const response = await fetch(`${BYTEPLUS_CONFIG.baseUrl.replace(/\/+$/, "")}${BYTEPLUS_CONFIG.path}`, {
@@ -45,7 +99,7 @@ export async function POST(request) {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model, content }),
+      body: JSON.stringify(requestBody),
     });
 
     const text = await response.text();
@@ -57,7 +111,7 @@ export async function POST(request) {
     }
     if (!response.ok) {
       return NextResponse.json(
-        { error: upstreamMessage(data, response.statusText, apiKey) },
+        upstreamError(data, response.statusText, apiKey),
         { status: response.status },
       );
     }

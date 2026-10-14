@@ -1,4 +1,5 @@
 import { getMediaCapability } from "./modelCapabilities.js";
+import { getBytePlusMaxReferenceImages } from "./byteplusModelConfig.js";
 
 // Synced from the canonical Muapi schema_data.json catalog.
 import {
@@ -10,6 +11,7 @@ import {
 // Placeholder ModelArk IDs; configure the account's model IDs through environment variables.
 const BYTEPLUS_SEEDREAM_MODEL_ID = process.env.BYTEPLUS_SEEDREAM_MODEL || "dola-seedream-5-0-pro-260628";
 const BYTEPLUS_SEEDANCE_MODEL_ID = process.env.BYTEPLUS_SEEDANCE_MODEL || "seedance-1-0-pro-250528";
+const BYTEPLUS_SEEDANCE_MAX_REFERENCE_IMAGES = getBytePlusMaxReferenceImages(BYTEPLUS_SEEDANCE_MODEL_ID);
 
 // Verified against https://api.muapi.ai/openapi.json on 2026-09-09.
 // Seedance 2.5 shares common inputs across its Standard, Intl and Spicy routes.
@@ -27446,17 +27448,17 @@ export const i2vModels = [
     "id": "byteplus-seedance-i2v",
     "name": "Seedance 2.5 (BytePlus)",
     "endpoint": BYTEPLUS_SEEDANCE_MODEL_ID,
-    "imageField": "image_url",
-    "maxImages": 1,
+    "imageField": "images_list",
+    "maxImages": BYTEPLUS_SEEDANCE_MAX_REFERENCE_IMAGES,
     "hasPrompt": true,
     "inputs": {
       "prompt": { "type": "string", "title": "Prompt", "name": "prompt" },
-      "image_url": {
-        "type": "string",
-        "title": "Reference Image",
-        "name": "image_url",
-        "field": "image",
-        "description": "The image used to guide video generation."
+      "images_list": {
+        "type": "array",
+        "title": "Reference Images",
+        "name": "images_list",
+        "maxItems": BYTEPLUS_SEEDANCE_MAX_REFERENCE_IMAGES,
+        "items": { "type": "string" }
       }
     },
     "provider": "byteplus",
