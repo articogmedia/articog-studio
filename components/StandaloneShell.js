@@ -213,17 +213,23 @@ const TABS = [
   },
   {
 <<<<<<< HEAD
+<<<<<<< HEAD
     id: 'ai-influencer',
     label: 'AI Influencer Studio',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
 =======
+=======
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
     id: 'library',
     label: 'Library',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10l2 2h6.5A1.5 1.5 0 0 1 20 7.5v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z" />
+<<<<<<< HEAD
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
+=======
 >>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
       </svg>
     )
@@ -398,6 +404,9 @@ export default function StandaloneShell({ locale = 'en' }) {
     }
   };
 
+<<<<<<< HEAD
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
+=======
 >>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
   // Sidebar Collapsed & Mobile Drawer State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
@@ -595,8 +604,11 @@ export default function StandaloneShell({ locale = 'en' }) {
   };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   // Auto-hide header when inside a specific workflow view or design agent
 =======
+=======
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
   const handleLibraryAssetAction = (asset, action) => {
     const targetTab = asset.kind === 'video'
       ? 'video'
@@ -607,6 +619,9 @@ export default function StandaloneShell({ locale = 'en' }) {
     handleTabChange(targetTab);
   };
 
+<<<<<<< HEAD
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
+=======
 >>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
   useEffect(() => {
     const isEditingWorkflow = (activeTab === 'workflows' || !!idFromParams) && urlWorkflowId;
@@ -824,8 +839,11 @@ export default function StandaloneShell({ locale = 'en' }) {
           {/* Right: Actions */}
           <div className="flex-shrink-0 flex items-center gap-3">
 <<<<<<< HEAD
+<<<<<<< HEAD
             <div className="flex items-center gap-2.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 transition-colors">
 =======
+=======
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
             <div className="flex items-center gap-2">
               <select
                 aria-label="Generation project"
@@ -1023,7 +1041,10 @@ export default function StandaloneShell({ locale = 'en' }) {
                 </div>
               )}
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
               <div className="mt-3 border-t border-white/[0.07] pt-3">
                 <a
                   href={studioPath('library')}
@@ -1059,6 +1080,7 @@ export default function StandaloneShell({ locale = 'en' }) {
         <div className="flex-1 min-h-0 h-full relative overflow-hidden bg-[#000000]">
         <div className={activeTab === 'image' ? "h-full w-full" : "hidden"}>
 <<<<<<< HEAD
+<<<<<<< HEAD
           <ImageStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
         </div>
         <div className={activeTab === 'layers' ? "h-full w-full" : "hidden"}>
@@ -1081,6 +1103,12 @@ export default function StandaloneShell({ locale = 'en' }) {
         </div>
         <div className={activeTab === 'body-swap' ? "h-full w-full" : "hidden"}>
           <RecastStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('body-swap')} onGenerationEnd={makeGenerationEndCallback('body-swap')} onGenerationComplete={makeSuccessCallback('body-swap')} onGenerationError={makeErrorCallback('body-swap')} />
+=======
+          <ImageStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'image' ? libraryAction : null} droppedFiles={activeTab === 'image' ? droppedFiles : null} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
+        </div>
+        <div className={activeTab === 'video' ? "h-full w-full" : "hidden"}>
+          <VideoStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'video' ? libraryAction : null} droppedFiles={activeTab === 'video' ? droppedFiles : null} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('video')} onGenerationEnd={makeGenerationEndCallback('video')} onGenerationComplete={makeSuccessCallback('video')} onGenerationError={makeErrorCallback('video')} />
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
 =======
           <ImageStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'image' ? libraryAction : null} droppedFiles={activeTab === 'image' ? droppedFiles : null} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
         </div>
