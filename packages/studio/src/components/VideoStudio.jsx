@@ -100,6 +100,7 @@ import {
 import usePromptMenu from "./prompt/usePromptMenu.js";
 import en from "../messages/en/videoStudio.json";
 import zh from "../messages/zh/videoStudio.json";
+import { addAsset } from "../library/libraryStore";
 import { resolveCopy } from "../i18nUtils";
 
 async function downloadFile(url, filename) {
@@ -783,6 +784,8 @@ export default function VideoStudio({
   droppedFiles,
   onFilesHandled,
   locale = "en",
+  selectedProjectId = "default",
+  assetAction = null,
 }) {
   const copy = useMemo(() => resolveCopy(en, zh, locale), [locale]);
   const LEGACY_PERSIST_KEY = "hg_video_studio_persistent";
@@ -817,6 +820,8 @@ export default function VideoStudio({
   const [modelParameterValues, setModelParameterValues] = useState(() =>
     createModelParameterValues(defaultModel),
   );
+  const handledAssetActionRef = useRef(null);
+  const [pendingAssetGenerateId, setPendingAssetGenerateId] = useState(null);
 
   // ── upload progress ──
   const [imageProgress, setImageProgress] = useState(0);
@@ -2237,6 +2242,38 @@ export default function VideoStudio({
           timestamp: new Date().toISOString(),
         };
         addToLocalHistory(entry);
+        addAsset({
+          kind: "video",
+          url: res.url,
+          prompt: currentModel?.hasPrompt ? trimmedPrompt : "",
+          model: selectedModel,
+          endpoint: selectedModel,
+          settings: {
+            ...currentModel.fixedParameters,
+            ...commonParams,
+            aspect_ratio: selectedAr,
+            duration: selectedDuration,
+            resolution: selectedResolution,
+            quality: selectedQuality,
+            effect: selectedEffect,
+            workflowId: selectedWorkflowId,
+            imageMode,
+            v2vMode,
+            referenceMedia: workflowMedia,
+            modelParameterValues: generationParameterValues,
+          },
+          referenceUrls: [
+            ...(workflowMedia.imageUrls || []),
+            ...(workflowMedia.endImageUrl ? [workflowMedia.endImageUrl] : []),
+            ...(workflowMedia.videoUrls || []),
+            ...(workflowMedia.audioUrls || []),
+          ],
+          costCredits: res.costCredits ?? res.cost ?? null,
+          aspectRatio: selectedAr,
+          resolution: selectedResolution || selectedQuality || null,
+          format: res.format || null,
+          projectId: selectedProjectId,
+        }).catch((error) => console.error("[VideoStudio] Could not save asset:", error));
         showVideoInCanvas(res.url, selectedModel);
         if (onGenerationComplete)
           onGenerationComplete({
@@ -2292,6 +2329,37 @@ export default function VideoStudio({
           timestamp: new Date().toISOString(),
         };
         addToLocalHistory(entry);
+        addAsset({
+          kind: "video",
+          url: res.url,
+          prompt: trimmedPrompt,
+          model: selectedModel,
+          endpoint: selectedModel,
+          settings: {
+            ...commonParams,
+            aspect_ratio: selectedAr,
+            duration: selectedDuration,
+            resolution: selectedResolution,
+            quality: selectedQuality,
+            effect: selectedEffect,
+            workflowId: selectedWorkflowId,
+            imageMode,
+            v2vMode,
+            referenceMedia: workflowMedia,
+            modelParameterValues: generationParameterValues,
+          },
+          referenceUrls: [
+            ...(workflowMedia.imageUrls || []),
+            ...(workflowMedia.endImageUrl ? [workflowMedia.endImageUrl] : []),
+            ...(workflowMedia.videoUrls || []),
+            ...(workflowMedia.audioUrls || []),
+          ],
+          costCredits: res.costCredits ?? res.cost ?? null,
+          aspectRatio: selectedAr,
+          resolution: selectedResolution || selectedQuality || null,
+          format: res.format || null,
+          projectId: selectedProjectId,
+        }).catch((error) => console.error("[VideoStudio] Could not save asset:", error));
         showVideoInCanvas(res.url, selectedModel);
         if (onGenerationComplete)
           onGenerationComplete({
@@ -2352,6 +2420,37 @@ export default function VideoStudio({
           timestamp: new Date().toISOString(),
         };
         addToLocalHistory(entry);
+        addAsset({
+          kind: "video",
+          url: res.url,
+          prompt: trimmedPrompt,
+          model: selectedModel,
+          endpoint: selectedModel,
+          settings: {
+            ...commonParams,
+            aspect_ratio: selectedAr,
+            duration: selectedDuration,
+            resolution: selectedResolution,
+            quality: selectedQuality,
+            effect: selectedEffect,
+            workflowId: selectedWorkflowId,
+            imageMode,
+            v2vMode,
+            referenceMedia: workflowMedia,
+            modelParameterValues: generationParameterValues,
+          },
+          referenceUrls: [
+            ...(workflowMedia.imageUrls || []),
+            ...(workflowMedia.endImageUrl ? [workflowMedia.endImageUrl] : []),
+            ...(workflowMedia.videoUrls || []),
+            ...(workflowMedia.audioUrls || []),
+          ],
+          costCredits: res.costCredits ?? res.cost ?? null,
+          aspectRatio: selectedAr,
+          resolution: selectedResolution || selectedQuality || null,
+          format: res.format || null,
+          projectId: selectedProjectId,
+        }).catch((error) => console.error("[VideoStudio] Could not save asset:", error));
         showVideoInCanvas(res.url, selectedModel);
         if (onGenerationComplete)
           onGenerationComplete({
@@ -2404,7 +2503,73 @@ export default function VideoStudio({
     onGenerationEnd,
     onGenerationError,
     onGenerationStart,
+    selectedProjectId,
   ]);
+
+  useEffect(() => {
+    if (!assetAction || handledAssetActionRef.current === assetAction.id) return;
+    handledAssetActionRef.current = assetAction.id;
+    const { asset, action } = assetAction;
+    let targetVariant = videoModelCatalog.variantById.get(asset.model);
+    let targetFamily = videoModelCatalog.familyByVariantId.get(asset.model);
+    let mode = asset.settings?.v2vMode
+      ? "v2v"
+      : asset.settings?.imageMode
+        ? "i2v"
+        : "t2v";
+
+    if (action === "reference") {
+      targetVariant = Array.from(videoModelCatalog.variantById.values()).find(
+        (variant) => getModelMediaCapabilities(variant.model)[asset.kind === "image" ? "image" : "video"].maxItems > 0
+          && (asset.kind === "image" ? variant.mode === "i2v" : variant.mode === "t2v"),
+      );
+      targetFamily = targetVariant
+        ? videoModelCatalog.familyByVariantId.get(targetVariant.model.id)
+        : null;
+      mode = asset.kind === "image" ? "i2v" : "v2v";
+    }
+
+    if (!targetVariant || !targetFamily) {
+      toast.error("This asset's model is not available in Video Studio.");
+      return;
+    }
+
+    applyUserSelectedVariant(
+      targetVariant,
+      mode,
+      targetFamily,
+      action === "reference" ? null : asset.settings?.workflowId || null,
+    );
+    setPrompt(asset.prompt || "");
+    setSelectedAr(asset.aspectRatio || asset.settings?.aspect_ratio || "16:9");
+    setSelectedDuration(asset.settings?.duration || selectedDuration);
+    setSelectedResolution(asset.resolution || asset.settings?.resolution || "");
+    setSelectedQuality(asset.settings?.quality || "");
+    if (asset.settings?.modelParameterValues) {
+      setModelParameterValues((values) => ({
+        ...values,
+        ...asset.settings.modelParameterValues,
+      }));
+    }
+
+    const media = action === "reference"
+      ? (asset.kind === "image"
+        ? { imageUrls: [asset.url], endImageUrl: null, videoUrls: [], audioUrls: [] }
+        : { imageUrls: [], endImageUrl: null, videoUrls: [asset.url], audioUrls: [] })
+      : asset.settings?.referenceMedia || {};
+    setUploadedImageUrls(media.imageUrls || []);
+    setUploadedEndImageUrl(media.endImageUrl || null);
+    setUploadedVideoUrls(media.videoUrls || []);
+    setUploadedAudioUrls(media.audioUrls || []);
+    setSelectedWorkflowId(action === "reference" ? null : asset.settings?.workflowId || null);
+    if (action === "recreate") setPendingAssetGenerateId(assetAction.id);
+  }, [assetAction, applyUserSelectedVariant, selectedDuration]);
+
+  useEffect(() => {
+    if (!pendingAssetGenerateId) return;
+    setPendingAssetGenerateId(null);
+    window.setTimeout(() => handleGenerate(), 0);
+  }, [pendingAssetGenerateId, handleGenerate]);
 
   // ── reset to prompt bar ───────────────────────────────────────────────────
   const resetToPromptBar = useCallback(() => {

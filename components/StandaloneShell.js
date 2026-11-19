@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+<<<<<<< HEAD
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { ImageStudio, VideoStudio, ClippingStudio, MotionControlStudio, VibeMotionStudio, LipSyncStudio, RecastStudio, CinemaStudio, AudioStudio, MarketingStudio, WorkflowStudio, AgentStudio, AppsStudio, AiInfluencerStudio, LayersStudio, getUserBalance } from 'studio';
@@ -10,6 +11,21 @@ const DesignAgentStudio = dynamic(() => import('studio').then(mod => mod.DesignA
   loading: () => <div className="h-full w-full bg-black flex items-center justify-center text-white/20">Loading Design Studio...</div>
 });
 import axios from 'axios';
+=======
+import { useParams } from 'next/navigation';
+import { ImageStudio, VideoStudio, CinemaStudio, AudioStudio, AppsStudio, AiInfluencerStudio, AssetsLibrary, getUserBalance, INTERNAL_SESSION_KEY } from 'studio';
+import axios from 'axios';
+import ArticogAccessScreen from './ArticogAccessScreen';
+import ArticogLogo from './ArticogLogo';
+import { createProject, listProjects } from '../packages/studio/src/library/libraryStore';
+import {
+  clearStoredAccessProfile,
+  readStoredAccessProfile,
+  saveStoredAccessProfile,
+} from '@/lib/accessProfileStorage';
+import { completeProfileFromDraft } from '@/lib/supabase/auth';
+import { supabaseBrowser } from '@/lib/supabase/client';
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
 import { getCommonCopy, getLocaleConfig, localizeStudioPath } from '@/lib/locales';
 
 // Tab/category ids, icons, and English `label` fallbacks are stable
@@ -196,11 +212,19 @@ const TABS = [
     )
   },
   {
+<<<<<<< HEAD
     id: 'ai-influencer',
     label: 'AI Influencer Studio',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+=======
+    id: 'library',
+    label: 'Library',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10l2 2h6.5A1.5 1.5 0 0 1 20 7.5v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z" />
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
       </svg>
     )
   }
@@ -342,11 +366,39 @@ export default function StandaloneShell({ locale = 'en' }) {
   
   const [apiKey, setApiKey] = useState(null);
   const [activeTab, setActiveTab] = useState(getInitialTab());
+  const [libraryProjects, setLibraryProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState('default');
+  const [libraryAction, setLibraryAction] = useState(null);
 
   const [balance, setBalance] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [hasMounted, setHasMounted] = useState(false);
+<<<<<<< HEAD
+=======
+  const [isDragging, setIsDragging] = useState(false);
+  const [droppedFiles, setDroppedFiles] = useState(null);
+
+  useEffect(() => {
+    listProjects()
+      .then(setLibraryProjects)
+      .catch((error) => console.error('[StandaloneShell] Could not load library projects:', error));
+  }, []);
+
+  const handleCreateProject = async () => {
+    const name = window.prompt('Project name');
+    if (!name?.trim()) return;
+    try {
+      const project = await createProject(name);
+      setLibraryProjects((projects) => [...projects, project]);
+      setSelectedProjectId(project.id);
+    } catch (error) {
+      console.error('[StandaloneShell] Could not create library project:', error);
+      window.alert('Could not create project.');
+    }
+  };
+
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
   // Sidebar Collapsed & Mobile Drawer State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window !== 'undefined') return localStorage.getItem('sidebar_collapsed') === 'true';
@@ -542,7 +594,20 @@ export default function StandaloneShell({ locale = 'en' }) {
     }
   };
 
+<<<<<<< HEAD
   // Auto-hide header when inside a specific workflow view or design agent
+=======
+  const handleLibraryAssetAction = (asset, action) => {
+    const targetTab = asset.kind === 'video'
+      ? 'video'
+      : asset.model?.startsWith('nano-banana-pro')
+        ? 'cinema'
+        : 'image';
+    setLibraryAction({ id: `${Date.now()}-${Math.random()}`, asset, action });
+    handleTabChange(targetTab);
+  };
+
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
   useEffect(() => {
     const isEditingWorkflow = (activeTab === 'workflows' || !!idFromParams) && urlWorkflowId;
     const isDesignAgent = activeTab === 'design-agent';
@@ -758,7 +823,33 @@ export default function StandaloneShell({ locale = 'en' }) {
 
           {/* Right: Actions */}
           <div className="flex-shrink-0 flex items-center gap-3">
+<<<<<<< HEAD
             <div className="flex items-center gap-2.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 transition-colors">
+=======
+            <div className="flex items-center gap-2">
+              <select
+                aria-label="Generation project"
+                value={selectedProjectId}
+                onChange={(event) => setSelectedProjectId(event.target.value)}
+                className="max-w-28 rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-[11px] text-white outline-none focus:border-white/25 sm:max-w-36 sm:px-2.5 sm:text-xs"
+              >
+                {libraryProjects.map((project) => (
+                  <option key={project.id} value={project.id} className="bg-[#111]">
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleCreateProject}
+                className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <span className="sm:hidden">New</span>
+                <span className="hidden sm:inline">New project</span>
+              </button>
+            </div>
+              <div className="flex items-center gap-2.5 bg-white/[0.03] px-3 py-1.5 rounded-full border border-white/[0.08] transition-colors">
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span className="text-xs font-bold text-white/90">
                 ${balance !== null ? `${balance}` : '---'}
@@ -931,6 +1022,35 @@ export default function StandaloneShell({ locale = 'en' }) {
                   </a>
                 </div>
               )}
+<<<<<<< HEAD
+=======
+              <div className="mt-3 border-t border-white/[0.07] pt-3">
+                <a
+                  href={studioPath('library')}
+                  onClick={(event) => handleNavigationItemClick(event, 'library')}
+                  aria-current={activeTab === 'library' ? 'page' : undefined}
+                  aria-label="Library"
+                  title={isSidebarCollapsed && !isMobileOpen ? 'Library' : undefined}
+                  className={`
+                    group relative flex items-center rounded-xl transition-all duration-150 text-[13px] font-semibold
+                    ${isSidebarCollapsed && !isMobileOpen ? 'h-10 w-10 justify-center mx-auto' : 'h-10 px-3 w-full gap-3'}
+                    ${activeTab === 'library'
+                      ? 'bg-white/[0.05] text-white border border-white/[0.08]'
+                      : 'text-white/55 hover:text-white hover:bg-white/[0.05] border border-transparent'
+                    }
+                  `}
+                >
+                  {activeTab === 'library' && (
+                    <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-white rounded-r-full" />
+                  )}
+                  <span className={`flex-shrink-0 [&_svg]:h-4 [&_svg]:w-4 ${activeTab === 'library' ? 'text-white' : 'text-white/50 group-hover:text-white'}`}>
+                    {TABS.find((tab) => tab.id === 'library')?.icon}
+                  </span>
+                  {(!isSidebarCollapsed || isMobileOpen) && <span className="truncate">Library</span>}
+                </a>
+              </div>
+
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
             </nav>
           </aside>
         )}
@@ -938,6 +1058,7 @@ export default function StandaloneShell({ locale = 'en' }) {
         {/* Studio Content */}
         <div className="flex-1 min-h-0 h-full relative overflow-hidden bg-[#000000]">
         <div className={activeTab === 'image' ? "h-full w-full" : "hidden"}>
+<<<<<<< HEAD
           <ImageStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
         </div>
         <div className={activeTab === 'layers' ? "h-full w-full" : "hidden"}>
@@ -960,9 +1081,18 @@ export default function StandaloneShell({ locale = 'en' }) {
         </div>
         <div className={activeTab === 'body-swap' ? "h-full w-full" : "hidden"}>
           <RecastStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('body-swap')} onGenerationEnd={makeGenerationEndCallback('body-swap')} onGenerationComplete={makeSuccessCallback('body-swap')} onGenerationError={makeErrorCallback('body-swap')} />
+=======
+          <ImageStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'image' ? libraryAction : null} droppedFiles={activeTab === 'image' ? droppedFiles : null} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
+        </div>
+        <div className={activeTab === 'video' ? "h-full w-full" : "hidden"}>
+          <VideoStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'video' ? libraryAction : null} droppedFiles={activeTab === 'video' ? droppedFiles : null} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('video')} onGenerationEnd={makeGenerationEndCallback('video')} onGenerationComplete={makeSuccessCallback('video')} onGenerationError={makeErrorCallback('video')} />
+>>>>>>> Add assets library: projects, favorites, move, recreate, use as reference
         </div>
         <div className={activeTab === 'cinema' ? "h-full w-full" : "hidden"}>
-          <CinemaStudio apiKey={apiKey} locale={locale} onGenerationStart={makeGenerationStartCallback('cinema')} onGenerationEnd={makeGenerationEndCallback('cinema')} onGenerationComplete={makeSuccessCallback('cinema')} onGenerationError={makeErrorCallback('cinema')} />
+          <CinemaStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'cinema' ? libraryAction : null} onGenerationStart={makeGenerationStartCallback('cinema')} onGenerationEnd={makeGenerationEndCallback('cinema')} onGenerationComplete={makeSuccessCallback('cinema')} onGenerationError={makeErrorCallback('cinema')} />
+        </div>
+        <div className={activeTab === 'library' ? "h-full w-full" : "hidden"}>
+          <AssetsLibrary onAssetAction={handleLibraryAssetAction} onProjectsChange={setLibraryProjects} />
         </div>
         <div className={activeTab === 'audio' ? "h-full w-full" : "hidden"}>
           <AudioStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('audio')} onGenerationEnd={makeGenerationEndCallback('audio')} onGenerationComplete={makeSuccessCallback('audio')} onGenerationError={makeErrorCallback('audio')} />
