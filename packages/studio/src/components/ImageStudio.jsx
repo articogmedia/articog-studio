@@ -72,6 +72,7 @@ import { useStudioBalance } from "../utils/StudioBalanceContext.js";
 import BatchStepper from "./BatchStepper.jsx";
 import BatchJobTile from "./BatchJobTile.jsx";
 import { runWithConcurrency } from "../utils/runWithConcurrency.js";
+import { UI } from "../styles/ui.js";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -1667,14 +1668,14 @@ export default function ImageStudio({
       {/* ── CENTRAL GALLERY AREA ── */}
       <div className="flex-1 w-full max-w-7xl mx-auto overflow-y-auto custom-scrollbar pb-40 lg:pb-32 px-2">
         {history.length > 0 || batchJobs.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full pt-4 animate-fade-in-up">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full pt-4 animate-fade-in-up">
             {batchJobs.map((job) => (
               <BatchJobTile key={job.id} job={job} kind="image" copy={copy.batch} />
             ))}
             {history.map((entry, idx) => (
               <div
                 key={entry.id || idx}
-                className="relative group rounded-lg overflow-hidden border border-white/10 bg-[#0a0a0a] shadow-xl hover:border-primary/50 transition-all duration-300 flex flex-col cursor-pointer"
+                className={`relative group overflow-hidden ${UI.card} bg-[#0a0a0a] shadow-xl hover:border-[var(--border-strong)] transition-all duration-300 flex flex-col cursor-pointer`}
                 onClick={() => setFullscreenUrl(entry.url)}
               >
                 <img
@@ -1697,7 +1698,7 @@ export default function ImageStudio({
                       e.stopPropagation();
                       downloadImage(entry.url, `muapi-${entry.id || idx}.jpg`);
                     }}
-                    className="p-2 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-primary hover:text-black transition-all border border-white/10"
+                    className={`${UI.buttonIcon} bg-black/60 backdrop-blur-md text-white hover:bg-primary hover:text-black`}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
@@ -1714,7 +1715,7 @@ export default function ImageStudio({
                         });
                       }
                     }}
-                    className="p-2 bg-black/60 backdrop-blur-md rounded-full text-red-400 hover:bg-red-500 hover:text-white transition-all border border-white/10"
+                    className={`${UI.buttonIcon} bg-black/60 backdrop-blur-md text-red-300 hover:bg-red-500 hover:text-white`}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <polyline points="3 6 5 6 21 6" />
@@ -1823,7 +1824,7 @@ export default function ImageStudio({
               {uploadedImageUrls && uploadedImageUrls.length > 0 && uploadedImageUrls.map((url, idx) => (
                 <div key={url} className={PROMPT_MEDIA_PREVIEW_CLASS}>
                   <img src={url} alt="" className="w-full h-full object-cover" />
-                  <span className="absolute left-0.5 top-0.5 rounded bg-black/75 px-1 text-[8px] font-semibold leading-4 text-white">{tagFor(idx)}</span>
+                  <span className="absolute left-1 top-1 rounded-full border border-white/25 bg-black/90 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white shadow">{tagFor(idx)}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -2111,13 +2112,13 @@ export default function ImageStudio({
                 <>
                   <span>{copy.promptBar.generateButton}</span>
                   {estimatedCredits !== null && (
-                    <span> · {estimatedCredits} {copy.promptBar.creditsSuffix}</span>
+                    <span className="font-normal text-black/60"> · {estimatedCredits} {copy.promptBar.creditsSuffix}</span>
                   )}
                 </>
               )}
             </PromptAction>
             {hasInsufficientBalance && (
-              <span className="absolute right-0 top-full mt-1 text-[11px] font-medium text-amber-300">
+              <span className="absolute right-0 top-full mt-1 text-xs font-medium text-[var(--danger)]">
                 {copy.promptBar.notEnoughCredits}
               </span>
             )}
@@ -2160,7 +2161,7 @@ export default function ImageStudio({
         batchSize={1}
         onAddHistoryItem={addToHistory}
       />
-      <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ duration: 5000, style: { background: '#111111', color: '#ffffff', border: '1px solid rgba(255,255,255,0.15)', fontSize: '13px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.6)', maxWidth: '440px', wordBreak: 'break-word', whiteSpace: 'pre-wrap', padding: '12px 16px' } }} />
+      <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ duration: 5000, style: { background: 'var(--bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--border-strong)', fontSize: '14px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.6)', maxWidth: '440px', wordBreak: 'break-word', whiteSpace: 'pre-wrap', padding: '12px 16px' } }} />
     </div>
   );
 }

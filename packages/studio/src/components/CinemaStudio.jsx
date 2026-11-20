@@ -28,6 +28,7 @@ import { addAsset } from "../library/libraryStore";
 import { tagFor } from "../utils/referenceTags.js";
 import { useCostEstimate } from "../utils/useCostEstimate.js";
 import { useStudioBalance } from "../utils/StudioBalanceContext.js";
+import { UI } from "../styles/ui.js";
 
 // ─── Constants (inlined from promptUtils) ───────────────────────────────────
 
@@ -432,7 +433,7 @@ function CameraControlsOverlay({
   return (
     <div
       ref={backdropRef}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xl animate-fade-in"
+      className={`${UI.modalOverlay} animate-fade-in bg-black/80 backdrop-blur-xl`}
       onClick={handleBackdropClick}
     >
       <div
@@ -440,9 +441,9 @@ function CameraControlsOverlay({
         aria-modal="true"
         aria-labelledby="camera-config-title"
         aria-describedby="camera-config-description"
-        className="flex max-h-[calc(100vh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0a0a0a]/95 shadow-[0_24px_100px_rgba(0,0,0,0.75)] backdrop-blur-2xl animate-scale-up"
+        className={`${UI.modal} flex max-h-[calc(100vh-2rem)] max-w-5xl flex-col overflow-hidden p-0 backdrop-blur-2xl animate-scale-up`}
       >
-        <div className="flex items-start justify-between border-b border-white/[0.05] px-5 py-5 md:px-7 md:py-6">
+        <div className="flex items-start justify-between border-b border-[var(--border-subtle)] px-5 py-5 md:px-7 md:py-6">
           <div>
             <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
               <svg
@@ -479,7 +480,7 @@ function CameraControlsOverlay({
             onClick={onClose}
             aria-label={copy.cameraOverlay.closeAria}
             title={copy.cameraOverlay.close}
-            className="ml-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.03] text-white/40 transition-all hover:border-white/15 hover:bg-white/[0.07] hover:text-white"
+            className={`ml-4 ${UI.buttonIcon}`}
           >
             <svg
               width="16"
@@ -928,11 +929,11 @@ export default function CinemaStudio({
       {/* ── CENTRAL GALLERY AREA ── */}
       <div className="flex-1 w-full max-w-7xl mx-auto overflow-y-auto custom-scrollbar pb-40 lg:pb-32 px-2">
         {history.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full pt-4 animate-fade-in-up">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full pt-4 animate-fade-in-up">
             {history.map((entry, idx) => (
               <div
                 key={entry.timestamp ?? idx}
-                className="relative group rounded-lg overflow-hidden border border-white/10 bg-[#0a0a0a] shadow-xl hover:border-[var(--color-accent)]/50 transition-all duration-300 flex flex-col cursor-pointer"
+                className={`relative group overflow-hidden ${UI.card} bg-[#0a0a0a] shadow-xl hover:border-[var(--border-strong)] transition-all duration-300 flex flex-col cursor-pointer`}
                 onClick={() => setFullscreenUrl(entry.url)}
               >
                 <img
@@ -1003,7 +1004,7 @@ export default function CinemaStudio({
                         window.open(entry.url, "_blank");
                       }
                     }}
-                    className="p-2 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-[var(--color-accent)] hover:text-black transition-all border border-white/10"
+                    className={`${UI.buttonIcon} bg-black/60 backdrop-blur-md text-white hover:bg-[var(--accent)] hover:text-black`}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
@@ -1018,7 +1019,7 @@ export default function CinemaStudio({
                         setInternalHistory(prev => prev.filter((_, i) => i !== idx));
                       }
                     }}
-                    className="p-2 bg-black/60 backdrop-blur-md rounded-full text-red-400 hover:bg-red-500 hover:text-white transition-all border border-white/10"
+                    className={`${UI.buttonIcon} bg-black/60 backdrop-blur-md text-red-300 hover:bg-red-500 hover:text-white`}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <polyline points="3 6 5 6 21 6" />
@@ -1219,7 +1220,7 @@ export default function CinemaStudio({
                       alt={copy.referenceImage.alt}
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-40 transition-opacity"
                     />
-                    <span className="absolute left-1 top-1 rounded bg-black/75 px-1 text-[8px] font-semibold leading-4 text-white">{tagFor(0)}</span>
+                    <span                     className="absolute left-1 top-1 rounded-full border border-white/25 bg-black/90 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white shadow">{tagFor(0)}</span>
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-white">
                         <path d="M18 6L6 18M6 6l12 12" />
@@ -1255,7 +1256,7 @@ export default function CinemaStudio({
                   ref={arBtnRef}
                   className={promptControlClassName({
                     active: openDropdown === "ar",
-                    className: "text-xs font-semibold",
+                    className: "text-sm font-semibold",
                   })}
                   onClick={() =>
                     setOpenDropdown((d) => (d === "ar" ? null : "ar"))
@@ -1284,7 +1285,7 @@ export default function CinemaStudio({
                   ref={resBtnRef}
                   className={promptControlClassName({
                     active: openDropdown === "res",
-                    className: "text-xs font-semibold",
+                    className: "text-sm font-semibold",
                   })}
                   onClick={() =>
                     setOpenDropdown((d) => (d === "res" ? null : "res"))
@@ -1308,12 +1309,12 @@ export default function CinemaStudio({
               {/* Summary Card (triggers overlay) */}
               <button
                 className={promptControlClassName({
-                  className: "text-left overflow-hidden text-xs font-semibold text-white/70 hover:text-white",
+                  className: "text-left overflow-hidden text-sm font-semibold text-white/70 hover:text-white",
                 })}
                 onClick={() => setIsOverlayOpen(true)}
               >
                 <div className="w-1.5 h-1.5 bg-[var(--color-accent)] rounded-full shadow-lg shadow-[var(--color-accent)]/20 shrink-0" />
-                <span className="max-w-[120px] truncate text-xs font-semibold text-white/70 group-hover:text-[var(--color-accent)] transition-colors">
+                <span className="max-w-[120px] truncate text-sm font-semibold text-white/70 group-hover:text-[var(--accent)] transition-colors">
                   {settings.camera} · {formatSummaryValue()}
                 </span>
               </button>
@@ -1333,13 +1334,13 @@ export default function CinemaStudio({
                 <>
                   <span>{copy.prompt.generate}</span>
                   {estimatedCredits !== null && (
-                    <span> · {estimatedCredits} {copy.prompt.creditsSuffix}</span>
+                    <span className="font-normal text-black/60"> · {estimatedCredits} {copy.prompt.creditsSuffix}</span>
                   )}
                 </>
               )}
             </PromptAction>
             {hasInsufficientBalance && (
-              <span className="absolute right-0 top-full mt-1 text-[11px] font-medium text-amber-300">
+              <span className="absolute right-0 top-full mt-1 text-xs font-medium text-[var(--danger)]">
                 {copy.prompt.notEnoughCredits}
               </span>
             )}

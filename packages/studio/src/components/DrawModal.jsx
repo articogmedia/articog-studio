@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { uploadFile, generateI2I } from "../muapi.js";
+import { UI } from "../styles/ui.js";
 
 export default function DrawModal({
   isOpen,
@@ -1070,9 +1071,9 @@ export default function DrawModal({
   const bbox = getObjectBoundingBox(selectedObj);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+    <div className={`${UI.modalOverlay} bg-black/85 backdrop-blur-md`}>
       {/* Modal Box */}
-      <div className="relative w-full max-w-5xl bg-[#0a0a0a] border border-white/10 rounded-2xl flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.9)] overflow-hidden h-[90vh]">
+      <div className={`${UI.modal} relative max-w-5xl flex h-[90vh] flex-col overflow-hidden p-0`}>
         {/* Header Tab Selector */}
         <div className="flex items-center justify-between border-b border-white/5 p-4 shrink-0 bg-[#0a0a0a]">
           <div className="flex items-center gap-1.5 bg-[#111111]/60 border border-white/5 p-1 rounded-full select-none">
@@ -1114,7 +1115,7 @@ export default function DrawModal({
           {/* Close button */}
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/5 transition-all"
+            className={UI.buttonIcon}
           >
             ×
           </button>

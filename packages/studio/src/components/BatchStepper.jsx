@@ -1,5 +1,7 @@
 "use client";
 
+import { UI } from "../styles/ui.js";
+
 export default function BatchStepper({ value, onChange, copy, disabled = false }) {
   const decrement = () => onChange(Math.max(1, value - 1));
   const increment = () => onChange(Math.min(4, value + 1));
@@ -8,9 +10,9 @@ export default function BatchStepper({ value, onChange, copy, disabled = false }
     <div
       role="group"
       aria-label={copy.label}
-      className="inline-flex items-center gap-1 rounded-xl border border-white/10 bg-white/[0.03] px-1.5 py-1"
+      className={`inline-flex items-center gap-1 ${UI.card} rounded-xl bg-white/[0.03] px-1.5 py-1`}
     >
-      <span className="px-1 text-[10px] font-medium text-white/50">
+      <span className="px-1 text-sm font-medium text-white/65">
         {copy.label}
       </span>
       <button
@@ -18,7 +20,7 @@ export default function BatchStepper({ value, onChange, copy, disabled = false }
         aria-label={copy.decrease}
         onClick={decrement}
         disabled={disabled || value <= 1}
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-sm font-bold text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+        className={`${UI.buttonIcon} text-sm font-bold`}
       >
         −
       </button>
@@ -34,7 +36,7 @@ export default function BatchStepper({ value, onChange, copy, disabled = false }
         aria-label={copy.increase}
         onClick={increment}
         disabled={disabled || value >= 4}
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-sm font-bold text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+        className={`${UI.buttonIcon} text-sm font-bold`}
       >
         +
       </button>

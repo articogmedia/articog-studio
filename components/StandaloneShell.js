@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { ImageStudio, VideoStudio, ClippingStudio, MotionControlStudio, VibeMotionStudio, LipSyncStudio, RecastStudio, CinemaStudio, AudioStudio, MarketingStudio, WorkflowStudio, AgentStudio, AppsStudio, AiInfluencerStudio, LayersStudio, AssetsLibrary, getUserBalance } from 'studio';
 import { createProject, listProjects } from '../packages/studio/src/library/libraryStore';
 import { StudioBalanceContext } from '../packages/studio/src/utils/StudioBalanceContext.js';
+import { UI } from '../packages/studio/src/styles/ui.js';
 
 const DesignAgentStudio = dynamic(() => import('studio').then(mod => mod.DesignAgentStudio), {
   ssr: false,
@@ -760,13 +761,13 @@ export default function StandaloneShell({ locale = 'en' }) {
 
       {/* Header */}
       {isHeaderVisible && (
-        <header className="flex-shrink-0 h-14 border-b border-white/[0.05] flex items-center justify-between px-4 bg-[#0a0a0a]/80 backdrop-blur-md z-50 gap-4">
+        <header className="flex-shrink-0 h-14 border-b border-[var(--border-subtle)] flex items-center justify-between px-2 sm:px-4 bg-[var(--bg-base)]/90 backdrop-blur-md z-50 gap-2 sm:gap-4">
           {/* Left: Mobile menu toggle + Logo + Desktop Sidebar Toggle */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Mobile drawer toggle */}
             <button
               onClick={() => setIsMobileOpen(!isMobileOpen)}
-              className="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+              className={`md:hidden ${UI.buttonIcon}`}
               aria-label={copy.shell.toggleNavMenu}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -780,7 +781,7 @@ export default function StandaloneShell({ locale = 'en' }) {
             <div className="hidden md:block relative group">
               <button
                 onClick={toggleSidebar}
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors border border-white/5"
+                className={UI.buttonIcon}
                 aria-label={isSidebarCollapsed ? copy.shell.expandSidebar : copy.shell.collapseSidebar}
               >
                 <svg
@@ -798,7 +799,7 @@ export default function StandaloneShell({ locale = 'en' }) {
                 </svg>
               </button>
               {/* Custom Tooltip */}
-              <div className="absolute left-0 top-full mt-2 px-2.5 py-1 bg-[#111111]/95 backdrop-blur-md text-white text-[11px] font-medium rounded-md shadow-2xl border border-white/15 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 whitespace-nowrap">
+              <div className={`absolute left-0 top-full mt-2 ${UI.dropdown} whitespace-nowrap text-sm opacity-0 transition-all duration-200 group-hover:opacity-100 pointer-events-none z-50`}>
                 {isSidebarCollapsed ? copy.shell.expandSidebar : copy.shell.collapseSidebar}
               </div>
             </div>
@@ -823,13 +824,13 @@ export default function StandaloneShell({ locale = 'en' }) {
           </div>
 
           {/* Right: Actions */}
-          <div className="flex-shrink-0 flex items-center gap-3">
-            <div className="flex items-center gap-2">
+          <div className="flex-shrink-0 flex items-center gap-1 sm:gap-3">
+            <div className="flex items-center gap-1 sm:gap-2">
               <select
                 aria-label="Generation project"
                 value={selectedProjectId}
                 onChange={(event) => setSelectedProjectId(event.target.value)}
-                className="max-w-28 rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-[11px] text-white outline-none focus:border-white/25 sm:max-w-36 sm:px-2.5 sm:text-xs"
+                className={`max-sm:w-20 max-sm:min-w-0 max-w-28 sm:max-w-36 ${UI.select} px-2 sm:px-2.5`}
               >
                 {libraryProjects.map((project) => (
                   <option key={project.id} value={project.id} className="bg-[#111]">
@@ -840,22 +841,25 @@ export default function StandaloneShell({ locale = 'en' }) {
               <button
                 type="button"
                 onClick={handleCreateProject}
-                className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                className={`${UI.buttonSecondary} max-sm:px-1.5 px-2.5`}
               >
                 <span className="sm:hidden">New</span>
                 <span className="hidden sm:inline">New project</span>
               </button>
             </div>
-            <div className="flex items-center gap-2.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 transition-colors">
+            <div className="flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 py-1.5 transition-colors sm:gap-2.5 sm:px-3">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs font-bold text-white/90">
-                ${balance !== null ? `${balance}` : '---'}
+              <span className="text-xs font-medium text-[var(--text-secondary)] sm:text-sm">
+                {copy.shell.creditsLabel}
+              </span>
+              <span className={`text-xs font-semibold sm:text-sm ${balance !== null ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>
+                {balance !== null ? `${balance}` : '—'}
               </span>
             </div>
 
             <button
               onClick={() => setShowSettings(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-white/10 bg-white/5 text-[13px] font-bold text-white/80 hover:text-white hover:bg-white/10 hover:border-white/20 transition-colors"
+              className={UI.buttonSecondary}
               aria-label={copy.shell.settings}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -882,9 +886,9 @@ export default function StandaloneShell({ locale = 'en' }) {
         {isHeaderVisible && (
           <aside
             className={`
-              fixed top-14 bottom-0 left-0 md:static md:h-full z-30 bg-[#0a0a0a]/95 backdrop-blur-md border-r border-white/[0.06] flex flex-col transition-all duration-300 ease-in-out flex-shrink-0 select-none
+              fixed top-14 bottom-0 left-0 min-w-0 md:static md:h-full z-30 bg-[var(--bg-base)]/95 backdrop-blur-md border-r border-[var(--border-subtle)] flex flex-col transition-all duration-200 ease-in-out flex-shrink-0 select-none
               ${isMobileOpen ? 'translate-x-0 w-60 z-50' : '-translate-x-full md:translate-x-0'}
-              ${isSidebarCollapsed ? 'md:w-16' : 'md:w-52'}
+              ${isSidebarCollapsed ? 'md:w-16' : 'md:w-60'}
             `}
           >
             <nav aria-label={copy.shell.studioNavigation} className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-none py-2 px-2">
@@ -906,8 +910,8 @@ export default function StandaloneShell({ locale = 'en' }) {
                         aria-controls={isCollapsed ? undefined : categoryPanelId}
                         title={isCollapsed ? categoryLabelText : undefined}
                         className={`
-                          group relative flex items-center rounded-xl transition-all duration-150 font-semibold
-                          ${isCollapsed ? 'h-11 w-11 justify-center mx-auto' : 'px-3 py-2.5 w-full gap-3 text-left'}
+                          group relative flex h-10 items-center rounded-control transition-all duration-150 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]
+                          ${isCollapsed ? 'w-10 justify-center mx-auto' : 'px-3 w-full gap-3 text-left'}
                           ${isCategoryActive
                             ? 'bg-white/[0.08] text-white border border-white/10 shadow-none'
                             : isCategoryOpen
@@ -917,16 +921,16 @@ export default function StandaloneShell({ locale = 'en' }) {
                         `}
                       >
                         {isCategoryActive && (
-                          <span className="absolute left-0 top-2 bottom-2 w-1 bg-white rounded-r-full" />
+                          <span className="absolute left-0 top-2 bottom-2 w-1 bg-[var(--accent)] rounded-r-full" />
                         )}
 
-                        <span className={`flex-shrink-0 transition-colors ${isCategoryActive ? 'text-[var(--color-accent)]' : 'text-white/55 group-hover:text-white'}`}>
+                        <span className={`flex-shrink-0 [&_svg]:h-5 [&_svg]:w-5 transition-colors ${isCategoryActive ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)] group-hover:text-white'}`}>
                           {category.icon}
                         </span>
 
                         {!isCollapsed && (
                           <>
-                            <span className="flex-1 min-w-0 text-[12px] leading-4 tracking-tight">
+                            <span className="flex-1 min-w-0 text-xs uppercase leading-4 tracking-wide">
                               {categoryLabelText}
                             </span>
                             <svg
@@ -966,17 +970,17 @@ export default function StandaloneShell({ locale = 'en' }) {
                                 onClick={(event) => handleNavigationItemClick(event, tab.id)}
                                 aria-current={isActive ? 'page' : undefined}
                                 className={`
-                                  group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-medium transition-all duration-150
+                                  group relative flex h-10 items-center gap-2.5 rounded-control px-2.5 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]
                                   ${isActive
-                                    ? 'bg-[var(--color-accent)]/12 text-[var(--color-accent)] border border-[var(--color-accent)]/20'
+                                    ? 'bg-[var(--accent)]/12 text-[var(--accent)] border border-[var(--accent)]/20'
                                     : 'text-white/55 hover:text-white hover:bg-white/[0.04] border border-transparent'
                                   }
                                 `}
                               >
                                 {isActive && (
-                                  <span className="absolute -left-[11px] top-2 bottom-2 w-0.5 rounded-full bg-[var(--color-accent)] shadow-none" />
+                                  <span className="absolute -left-[11px] top-2 bottom-2 w-0.5 rounded-full bg-[var(--accent)] shadow-none" />
                                 )}
-                                <span className={`flex-shrink-0 ${isActive ? 'text-[var(--color-accent)]' : 'text-white/45 group-hover:text-white/80'}`}>
+                                <span className={`flex-shrink-0 [&_svg]:h-5 [&_svg]:w-5 ${isActive ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)] group-hover:text-white'}`}>
                                   {tab.icon}
                                 </span>
                                 <span className="truncate">{tabLabel(tab.id)}</span>
@@ -999,8 +1003,8 @@ export default function StandaloneShell({ locale = 'en' }) {
                     aria-label={tabLabel(EXPLORE_APPS_TAB.id)}
                     title={isSidebarCollapsed && !isMobileOpen ? tabLabel(EXPLORE_APPS_TAB.id) : undefined}
                     className={`
-                      group relative flex items-center rounded-xl transition-all duration-150 text-[13px] font-semibold
-                      ${isSidebarCollapsed && !isMobileOpen ? 'h-11 w-11 justify-center mx-auto' : 'px-3 py-2.5 w-full gap-3'}
+                      group relative flex h-10 items-center rounded-control transition-all duration-150 text-sm font-semibold
+                      ${isSidebarCollapsed && !isMobileOpen ? 'w-10 justify-center mx-auto' : 'px-3 w-full gap-3'}
                       ${activeTab === EXPLORE_APPS_TAB.id
                         ? 'bg-white/[0.08] text-white border border-white/10'
                         : 'text-white/60 hover:text-white hover:bg-white/[0.04] border border-transparent'
@@ -1008,9 +1012,9 @@ export default function StandaloneShell({ locale = 'en' }) {
                     `}
                   >
                     {activeTab === EXPLORE_APPS_TAB.id && (
-                      <span className="absolute left-0 top-2 bottom-2 w-1 bg-white rounded-r-full" />
+                      <span className="absolute left-0 top-2 bottom-2 w-1 bg-[var(--accent)] rounded-r-full" />
                     )}
-                    <span className={`flex-shrink-0 ${activeTab === EXPLORE_APPS_TAB.id ? 'text-[var(--color-accent)]' : 'text-white/50 group-hover:text-white'}`}>
+                    <span className={`flex-shrink-0 [&_svg]:h-5 [&_svg]:w-5 ${activeTab === EXPLORE_APPS_TAB.id ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)] group-hover:text-white'}`}>
                       {EXPLORE_APPS_TAB.icon}
                     </span>
                     {(!isSidebarCollapsed || isMobileOpen) && (
@@ -1027,7 +1031,7 @@ export default function StandaloneShell({ locale = 'en' }) {
                   aria-label="Library"
                   title={isSidebarCollapsed && !isMobileOpen ? 'Library' : undefined}
                   className={`
-                    group relative flex items-center rounded-xl transition-all duration-150 text-[13px] font-semibold
+                    group relative flex h-10 items-center rounded-control transition-all duration-150 text-sm font-semibold
                     ${isSidebarCollapsed && !isMobileOpen ? 'h-10 w-10 justify-center mx-auto' : 'h-10 px-3 w-full gap-3'}
                     ${activeTab === 'library'
                       ? 'bg-white/[0.05] text-white border border-white/[0.08]'
@@ -1036,9 +1040,9 @@ export default function StandaloneShell({ locale = 'en' }) {
                   `}
                 >
                   {activeTab === 'library' && (
-                    <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-white rounded-r-full" />
+                    <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-[var(--accent)] rounded-r-full" />
                   )}
-                  <span className={`flex-shrink-0 [&_svg]:h-4 [&_svg]:w-4 ${activeTab === 'library' ? 'text-white' : 'text-white/50 group-hover:text-white'}`}>
+                  <span className={`flex-shrink-0 [&_svg]:h-5 [&_svg]:w-5 ${activeTab === 'library' ? 'text-white' : 'text-[var(--text-secondary)] group-hover:text-white'}`}>
                     {TABS.find((tab) => tab.id === 'library')?.icon}
                   </span>
                   {(!isSidebarCollapsed || isMobileOpen) && <span className="truncate">Library</span>}
@@ -1049,7 +1053,7 @@ export default function StandaloneShell({ locale = 'en' }) {
         )}
 
         {/* Studio Content */}
-        <div className="flex-1 min-h-0 h-full relative overflow-hidden bg-[#000000]">
+        <div className="flex-1 min-h-0 h-full relative overflow-hidden bg-[var(--bg-base)] p-6">
         <StudioBalanceContext.Provider value={balance}>
         <div className={activeTab === 'image' ? "h-full w-full" : "hidden"}>
           <ImageStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'image' ? libraryAction : null} onLibraryAvailability={handleImageLibraryAvailability} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
@@ -1254,19 +1258,19 @@ export default function StandaloneShell({ locale = 'en' }) {
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in-up">
-          <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-8 w-full max-w-sm shadow-2xl">
-            <h2 className="text-white font-bold text-lg mb-2">{copy.settingsModal.title}</h2>
-            <p className="text-white/40 text-[13px] mb-8">
+        <div className={`${UI.modalOverlay} animate-fade-in-up`}>
+          <div className={`${UI.modal} max-w-sm p-8`}>
+            <h2 className="mb-2 text-base font-semibold text-white">{copy.settingsModal.title}</h2>
+            <p className="mb-8 text-sm text-[var(--text-secondary)]">
               {copy.settingsModal.subtitle}
             </p>
 
             <div className="space-y-4 mb-8">
-              <div className="bg-white/5 border border-white/[0.03] rounded-md p-4">
-                <label className="block text-xs font-bold text-white/30 mb-2">
+              <div className={`${UI.card} bg-white/5 p-4`}>
+                <label className="mb-2 block text-xs font-bold text-[var(--text-secondary)]">
                    {copy.settingsModal.activeApiKey}
                 </label>
-                <div className="text-[13px] font-mono text-white/80">
+                <div className="text-sm font-mono text-white/80">
                   {apiKey.slice(0, 8)}••••••••••••••••
                 </div>
               </div>
@@ -1275,13 +1279,13 @@ export default function StandaloneShell({ locale = 'en' }) {
             <div className="flex gap-3">
               <button
                 onClick={handleKeyChange}
-                className="flex-1 h-10 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition-all"
+                className={`${UI.buttonGhost} flex-1 bg-red-500/10 text-red-300 hover:bg-red-500/20`}
               >
                 {copy.settingsModal.changeKey}
               </button>
               <button
                 onClick={() => setShowSettings(false)}
-                className="flex-1 h-10 rounded-md bg-white/5 text-white/80 hover:bg-white/10 text-xs font-semibold transition-all border border-white/5"
+                className={`${UI.buttonSecondary} flex-1`}
               >
                 {copy.settingsModal.close}
               </button>

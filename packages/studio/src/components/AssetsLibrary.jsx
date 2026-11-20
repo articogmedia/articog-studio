@@ -17,6 +17,7 @@ import {
 } from "../library/libraryStore";
 import { uploadFile } from "../muapi.js";
 import UndoBar from "./UndoBar.jsx";
+import { UI } from "../styles/ui.js";
 import commonEn from "../../../../messages/en/common.json";
 
 function formatDate(value, locale) {
@@ -378,12 +379,12 @@ export default function AssetsLibrary({
             event.stopPropagation();
             setOpenUseAsId((current) => current === menuId ? null : menuId);
           }}
-          className="rounded-md border border-white/10 px-2 py-1 text-[11px] text-white/65 hover:bg-white/5 hover:text-white"
+          className={UI.buttonSecondary}
         >
           {copy.useAs}
         </button>
         {openUseAsId === menuId && (
-          <div className="absolute bottom-full left-0 z-30 mb-1 min-w-max rounded-lg border border-white/10 bg-[#111] p-1 shadow-xl">
+          <div className={`absolute bottom-full left-0 z-30 mb-1 min-w-max ${UI.dropdown}`}>
             {options.map((option) => (
               <button
                 key={option.action}
@@ -395,7 +396,7 @@ export default function AssetsLibrary({
                   if (menuId.startsWith("asset-")) setSelectedAsset(null);
                   onAssetAction?.(item, option.action);
                 }}
-                className="block w-full rounded px-2.5 py-1.5 text-left text-xs text-white/75 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
+                className={UI.dropdownItem}
               >
                 {option.label}
               </button>
@@ -408,12 +409,12 @@ export default function AssetsLibrary({
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-app-bg p-4 text-white md:p-6">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold">{copy.title}</h1>
-          <p className="mt-1 text-sm text-white/45">{copy.subtitle}</p>
+      <div className="-mx-4 -mt-4 mb-5 flex items-center justify-between gap-4 border-b border-white/10 px-6 py-5 md:-mx-6 md:-mt-6">
+        <div className="min-w-0">
+          <h1 className="truncate text-2xl font-semibold tracking-tight text-white md:text-3xl">{copy.title}</h1>
+          <p className="mt-1 truncate text-sm text-white/55">{copy.subtitle}</p>
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1">
+        <div className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-lg border border-white/10 bg-white/[0.03] p-1">
           {TABS.map(([item, label]) => (
             <button
               key={item}
@@ -422,13 +423,16 @@ export default function AssetsLibrary({
                 setTab(item);
                 setOpenedProjectId(null);
               }}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                tab === item ? "bg-white/10 text-white" : "text-white/55 hover:text-white"
+              className={`${UI.tabPill} ${
+                tab === item
+                  ? UI.tabPillActive
+                  : UI.tabPillInactive
               }`}
             >
-              {copy.tabCount
-                .replace("{label}", label)
-                .replace("{count}", String(tabCounts[item]))}
+              <span>{label}</span>
+              <span className={`ml-1.5 ${UI.badge}`}>
+                {tabCounts[item]}
+              </span>
             </button>
           ))}
         </div>
@@ -443,20 +447,21 @@ export default function AssetsLibrary({
           {projects.map((project) => {
             const count = assets.filter((asset) => asset.projectId === project.id).length;
             return (
-              <div key={project.id} className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+              <div key={project.id} className={`flex min-h-28 items-center gap-3 ${UI.card} bg-white/[0.03] p-4`}>
                 <button
                   type="button"
                   onClick={() => setOpenedProjectId(project.id)}
-                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  title={project.name}
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                 >
-                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-white/65" aria-hidden="true">
+                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-control bg-white/[0.06] text-[var(--text-secondary)]" aria-hidden="true">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
                       <path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h5l2 2H19.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z" />
                     </svg>
                   </span>
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium">{project.name}</span>
-                    <span className="mt-1 block text-xs text-white/40">
+                    <span className="block truncate text-xl font-semibold text-white md:text-2xl">{project.name}</span>
+                    <span className="mt-1 block text-sm text-[var(--text-secondary)]">
                       {copy.assetCount
                         .replace("{count}", String(count))
                         .replace("{label}", count === 1 ? copy.assetSingular : copy.assetPlural)}
@@ -467,7 +472,7 @@ export default function AssetsLibrary({
                   <button
                     type="button"
                     onClick={() => handleRenameProject(project)}
-                    className="rounded px-2 py-1 text-xs text-white/45 hover:bg-white/10 hover:text-white"
+                    className={UI.buttonGhost}
                     aria-label={copy.renameProjectAria.replace("{name}", project.name)}
                   >
                     {copy.rename}
@@ -477,7 +482,7 @@ export default function AssetsLibrary({
                   <button
                     type="button"
                     onClick={() => handleDeleteProject(project)}
-                    className="rounded px-2 py-1 text-xs text-white/45 hover:bg-red-500/10 hover:text-red-300"
+                    className={`${UI.buttonGhost} hover:bg-red-500/10 hover:text-red-300`}
                     aria-label={copy.deleteProjectAria.replace("{name}", project.name)}
                   >
                     {copy.delete}
@@ -490,22 +495,33 @@ export default function AssetsLibrary({
       ) : (
         <>
           {tab === "Projects" && (
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-4 flex flex-col items-start gap-2">
               <button
                 type="button"
                 onClick={() => setOpenedProjectId(null)}
-                className="rounded-md border border-white/10 px-2.5 py-1.5 text-xs text-white/65 hover:bg-white/5 hover:text-white"
+                className={`${UI.buttonGhost} justify-start px-0`}
               >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
                 {copy.backToProjects}
               </button>
-              <h2 className="text-sm font-medium text-white/80">{selectedProject?.name || copy.projectFallback}</h2>
+              <h2
+                title={selectedProject?.name || copy.projectFallback}
+                className="max-w-full truncate text-xl font-semibold text-white md:text-2xl"
+              >
+                {selectedProject?.name || copy.projectFallback}
+              </h2>
             </div>
           )}
           {tab === "Projects" && openedProjectId && (
-            <section className="mb-5 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h3 className="text-sm font-medium text-white/80">
-                  {copy.inputCount.replace("{count}", String(projectInputs.length))}
+            <section className={`mb-5 ${UI.card} bg-white/[0.02] p-5`}>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h3 className="flex items-center text-base font-semibold text-white">
+                  <span>{copy.inputCount}</span>
+                  <span className={`ml-2 ${UI.badge}`}>
+                    {projectInputs.length}
+                  </span>
                 </h3>
                 <input
                   ref={inputFileRef}
@@ -519,7 +535,7 @@ export default function AssetsLibrary({
                   type="button"
                   disabled={uploadingInputs}
                   onClick={() => inputFileRef.current?.click()}
-                  className="rounded-md border border-white/10 px-3 py-1.5 text-xs text-white/70 hover:bg-white/5 hover:text-white disabled:cursor-wait disabled:opacity-50"
+                  className={UI.buttonSecondary}
                 >
                   {uploadingInputs ? copy.uploading : copy.addFiles}
                 </button>
@@ -530,7 +546,7 @@ export default function AssetsLibrary({
                     <div key={input.id} className="group relative w-24 flex-shrink-0">
                       <div className="relative h-20 overflow-hidden rounded-lg border border-white/10 bg-black">
                         {input.kind === "video" ? (
-                          <video src={input.url} aria-label={copy.inputVideoAlt} className="h-full w-full object-cover" muted preload="metadata" />
+                          <video src={input.url} aria-label={copy.inputVideoAlt}                           className="h-full w-full object-cover" muted preload="metadata" />
                         ) : (
                           <img src={input.url} alt={input.name || copy.inputImageAlt} className="h-full w-full object-cover" />
                         )}
@@ -540,7 +556,7 @@ export default function AssetsLibrary({
                           onClick={() => handleRemoveInput(input)}
                           aria-label={copy.removeInput}
                           title={input.name || copy.removeInput}
-                          className="absolute right-1 top-1 rounded bg-black/75 px-1.5 py-0.5 text-xs text-white/80 opacity-0 transition-opacity hover:text-white group-hover:opacity-100 focus:opacity-100"
+                          className={`absolute right-1 top-1 ${UI.buttonIcon} bg-black/75 p-1 text-xs text-white/80 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100`}
                         >
                           ×
                         </button>
@@ -550,7 +566,7 @@ export default function AssetsLibrary({
                   ))}
                 </div>
               ) : (
-                <p className="py-2 text-xs text-white/40">{copy.noInputs}</p>
+                <p className="py-2 text-sm text-white/55">{copy.noInputs}</p>
               )}
             </section>
           )}
@@ -561,21 +577,21 @@ export default function AssetsLibrary({
                   key={asset.id}
                   type="button"
                   onClick={() => setSelectedAsset(asset)}
-                  className="group overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.03] text-left transition-colors hover:border-white/20"
+                  className={`group overflow-hidden ${UI.card} bg-white/[0.03] text-left transition-colors hover:border-white/20`}
                 >
                   {asset.kind === "video" ? (
                     <video src={asset.url} aria-label={copy.videoTab} className="aspect-square w-full bg-black object-cover" muted preload="metadata" />
                   ) : (
                     <img src={asset.url} alt={asset.prompt || copy.generatedImageAlt} className="aspect-square w-full bg-black object-cover" />
                   )}
-                  <span className="block truncate px-3 py-2.5 text-xs text-white/65 group-hover:text-white">
+                  <span className="block truncate px-3 py-2.5 text-sm text-white/55 group-hover:text-white">
                     {asset.prompt || asset.model || copy.generatedAsset}
                   </span>
                 </button>
               ))}
             </div>
           ) : (
-            <div className="flex flex-1 items-center justify-center text-sm text-white/40">
+            <div className="flex flex-1 items-center justify-center text-sm text-white/55">
               {copy.noAssets}
             </div>
           )}
@@ -589,11 +605,11 @@ export default function AssetsLibrary({
             aria-modal="true"
             aria-label={copy.assetDetails}
             onClick={(event) => event.stopPropagation()}
-            className="flex h-full w-full max-w-xl flex-col overflow-y-auto border-l border-white/10 bg-[#0b0b0b] shadow-2xl"
+            className={`flex h-full w-full max-w-xl flex-col overflow-y-auto ${UI.card} rounded-none border-y-0 border-r-0 border-l bg-[var(--bg-base)] shadow-2xl`}
           >
-            <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-3">
-              <h2 className="text-sm font-semibold">{copy.assetDetails}</h2>
-              <button type="button" onClick={() => setSelectedAsset(null)} className="rounded px-2 py-1 text-white/55 hover:bg-white/10 hover:text-white" aria-label={copy.closeAssetDetails}>×</button>
+            <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3">
+              <h2 className="text-base font-semibold">{copy.assetDetails}</h2>
+              <button type="button" onClick={() => setSelectedAsset(null)} className={UI.buttonIcon} aria-label={copy.closeAssetDetails}>×</button>
             </div>
             <div className="p-4">
               {selectedAsset.kind === "video" ? (
@@ -627,21 +643,21 @@ export default function AssetsLibrary({
               )}
               <div className="mt-3">{renderUseAsMenu(selectedAsset, `asset-${selectedAsset.id}`)}</div>
               <div className="mt-4 flex items-center justify-between">
-                <span className="text-xs uppercase tracking-wide text-white/40">
+                <span className="text-sm uppercase tracking-wide text-white/55">
                   {selectedAsset.kind === "video" ? copy.videoTab : copy.imageTab}
                 </span>
-                <button type="button" onClick={handleFavorite} className={`rounded-md border px-3 py-1.5 text-xs ${selectedAsset.favorite ? "border-pink-400/30 text-pink-300" : "border-white/10 text-white/65 hover:text-white"}`}>
+                <button type="button" onClick={handleFavorite} className={`${UI.buttonSecondary} ${selectedAsset.favorite ? "border-pink-400/30 text-pink-300" : ""}`}>
                   {selectedAsset.favorite ? copy.favorited : copy.favorite}
                 </button>
               </div>
               <div className="mt-4">
                 <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-white/45">{copy.prompt}</h3>
-                  <button type="button" onClick={handleCopyPrompt} className="text-xs text-white/60 hover:text-white">{copy.copy}</button>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-white/55">{copy.prompt}</h3>
+                  <button type="button" onClick={handleCopyPrompt} className={UI.buttonGhost}>{copy.copy}</button>
                 </div>
                 <p className="whitespace-pre-wrap rounded-lg border border-white/[0.08] bg-white/[0.03] p-3 text-sm leading-6 text-white/80">{selectedAsset.prompt || "—"}</p>
               </div>
-              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 {[
                   [copy.model, selectedAsset.model],
                   [copy.aspect, selectedAsset.aspectRatio],
@@ -661,21 +677,21 @@ export default function AssetsLibrary({
                   [copy.created, formatDate(selectedAsset.createdAt, locale)],
                 ].map(([label, value]) => (
                   <div key={label}>
-                    <dt className="text-white/40">{label}</dt>
+                    <dt className="text-white/55">{label}</dt>
                     <dd className="mt-1 break-words text-white/80">{value || "—"}</dd>
                   </div>
                 ))}
               </dl>
               <div className="mt-5 grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => beginAssetAction("recreate")} className="rounded-md bg-white px-3 py-2 text-xs font-semibold text-black hover:bg-white/85">{copy.recreate}</button>
-                <button type="button" onClick={() => beginAssetAction("reuse")} className="rounded-md border border-white/15 px-3 py-2 text-xs font-medium text-white/80 hover:bg-white/5">{copy.reuse}</button>
-                <button type="button" onClick={() => beginAssetAction("reference")} className="col-span-2 rounded-md border border-white/15 px-3 py-2 text-xs font-medium text-white/80 hover:bg-white/5">{copy.useAsReference}</button>
-                <a href={selectedAsset.url} download className="rounded-md border border-white/15 px-3 py-2 text-center text-xs font-medium text-white/80 hover:bg-white/5">{copy.download}</a>
-                <button type="button" onClick={handleDeleteAsset} className="rounded-md border border-red-400/20 px-3 py-2 text-xs font-medium text-red-300 hover:bg-red-400/10">{copy.delete}</button>
+                <button type="button" onClick={() => beginAssetAction("recreate")} className={UI.buttonPrimary}>{copy.recreate}</button>
+                <button type="button" onClick={() => beginAssetAction("reuse")} className={UI.buttonSecondary}>{copy.reuse}</button>
+                <button type="button" onClick={() => beginAssetAction("reference")} className={`col-span-2 ${UI.buttonSecondary}`}>{copy.useAsReference}</button>
+                <a href={selectedAsset.url} download className={`${UI.buttonSecondary} text-center`}>{copy.download}</a>
+                <button type="button" onClick={handleDeleteAsset} className={`${UI.buttonSecondary} border-red-400/20 text-red-300 hover:bg-red-400/10`}>{copy.delete}</button>
               </div>
-              <label className="mt-4 block text-xs text-white/45">
+              <label className="mt-4 block text-sm text-white/55">
                 {copy.moveToProject}
-                <select value={selectedAsset.projectId || "default"} onChange={handleMove} className="mt-1.5 w-full rounded-md border border-white/10 bg-[#111] px-3 py-2 text-sm text-white outline-none">
+                <select value={selectedAsset.projectId || "default"} onChange={handleMove} className={`mt-1.5 ${UI.select}`}>
                   {projects.map((project) => (
                     <option key={project.id} value={project.id}>{project.name}</option>
                   ))}
