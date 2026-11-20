@@ -120,6 +120,9 @@
     "reference": "Reference {count}/{max}",
     "startFrame": "Start frame {count}/{max}",
     "endFrame": "End frame {count}/{max}"
+    ,"undoDeletedMessage": "Deleted."
+    ,"undo": "Undo"
+    ,"undoRestoreError": "Could not restore the deleted item."
   },
   "apiKeyModal": {
     "title": "Articog Studio",

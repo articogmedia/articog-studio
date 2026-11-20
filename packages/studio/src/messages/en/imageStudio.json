@@ -48,7 +48,17 @@
     "effectFallback": "Effect",
     "drawButton": "Draw",
     "generating": "Generating...",
-    "generateButton": "Generate"
+    "generateButton": "Generate",
+    "creditsSuffix": "credits",
+    "notEnoughCredits": "Not enough credits"
+  },
+  "batch": {
+    "label": "Batch size",
+    "decrease": "Decrease batch size",
+    "increase": "Increase batch size",
+    "queued": "Waiting to generate",
+    "generating": "Generating",
+    "failed": "Generation failed"
   },
   "popovers": {
     "model": "Model",

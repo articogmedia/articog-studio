@@ -38,7 +38,9 @@
   "prompt": {
     "placeholder": "Describe your cinema scene...",
     "generating": "Generating...",
-    "generate": "Shoot"
+    "generate": "Shoot",
+    "creditsSuffix": "credits",
+    "notEnoughCredits": "Not enough credits"
   },
   "fullscreen": {
     "alt": "Fullscreen Preview"

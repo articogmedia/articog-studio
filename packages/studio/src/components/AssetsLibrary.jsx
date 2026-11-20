@@ -11,9 +11,12 @@ import {
   moveAsset,
   removeInput,
   renameProject,
+  restoreAsset,
+  restoreInput,
   toggleFavorite,
 } from "../library/libraryStore";
 import { uploadFile } from "../muapi.js";
+import UndoBar from "./UndoBar.jsx";
 import commonEn from "../../../../messages/en/common.json";
 
 function formatDate(value, locale) {
@@ -57,6 +60,8 @@ export default function AssetsLibrary({
   const [loadError, setLoadError] = useState("");
   const [uploadingInputs, setUploadingInputs] = useState(false);
   const [openUseAsId, setOpenUseAsId] = useState(null);
+  const [undoEntry, setUndoEntry] = useState(null);
+  const undoIdRef = useRef(0);
   const inputFileRef = useRef(null);
 
   const refresh = useCallback(async () => {
@@ -198,6 +203,23 @@ export default function AssetsLibrary({
     }
   };
 
+  const handleRemoveInputWithUndo = async (input) => {
+    try {
+      const inputToRestore = { ...input };
+      const removedInput = await removeInput(input.id);
+      if (!removedInput) return;
+      setUndoEntry({
+        id: ++undoIdRef.current,
+        kind: "input",
+        item: inputToRestore,
+      });
+      await refresh();
+    } catch (error) {
+      console.error("[AssetsLibrary] Could not remove project input:", error);
+      setLoadError(copy.removeInputError);
+    }
+  };
+
   const handleFavorite = async () => {
     if (!selectedAsset) return;
     try {
@@ -231,6 +253,65 @@ export default function AssetsLibrary({
       setLoadError(copy.deleteAssetError);
     }
   };
+
+  const handleDeleteAssetWithUndo = async () => {
+    if (!selectedAsset || !window.confirm(copy.deleteAssetConfirm)) return;
+    try {
+      const assetToRestore = { ...selectedAsset };
+      const deletedAsset = await deleteAsset(selectedAsset.id);
+      if (!deletedAsset) return;
+      setUndoEntry({
+        id: ++undoIdRef.current,
+        kind: "asset",
+        item: assetToRestore,
+      });
+      setSelectedAsset(null);
+      await refresh();
+    } catch (error) {
+      console.error("[AssetsLibrary] Could not delete asset:", error);
+      setLoadError(copy.deleteAssetError);
+    }
+  };
+
+  const handleUndoDelete = async () => {
+    const entry = undoEntry;
+    setUndoEntry(null);
+    if (!entry) return;
+    try {
+      if (entry.kind === "asset") await restoreAsset(entry.item);
+      else await restoreInput(entry.item);
+      await refresh();
+    } catch (error) {
+      console.error("[AssetsLibrary] Could not restore deleted item:", error);
+      setLoadError(copy.undoRestoreError);
+    }
+  };
+
+  const handleUndoDeleteCapture = (event) => {
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    const button = target?.closest("button");
+    if (!button) return;
+
+    const isInputDelete = button.hasAttribute("data-library-remove-input");
+    const detailsPanel = button.closest('[role="dialog"]');
+    const isAssetDelete = detailsPanel?.getAttribute("aria-label") === copy.assetDetails
+      && button.textContent.trim() === copy.delete;
+    if (!isInputDelete && !isAssetDelete) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (isAssetDelete) {
+      void handleDeleteAssetWithUndo();
+      return;
+    }
+    const input = inputs.find((item) => item.id === button.getAttribute("data-library-remove-input"));
+    if (input) void handleRemoveInputWithUndo(input);
+  };
+
+  useEffect(() => {
+    document.addEventListener("click", handleUndoDeleteCapture, true);
+    return () => document.removeEventListener("click", handleUndoDeleteCapture, true);
+  }, [handleUndoDeleteCapture]);
 
   const handleCopyPrompt = async () => {
     if (!selectedAsset?.prompt) return;
@@ -455,6 +536,7 @@ export default function AssetsLibrary({
                         )}
                         <button
                           type="button"
+                          data-library-remove-input={input.id}
                           onClick={() => handleRemoveInput(input)}
                           aria-label={copy.removeInput}
                           title={input.name || copy.removeInput}
@@ -602,6 +684,15 @@ export default function AssetsLibrary({
             </div>
           </section>
         </div>
+      )}
+      {undoEntry && (
+        <UndoBar
+          key={undoEntry.id}
+          message={copy.undoDeletedMessage}
+          undoLabel={copy.undo}
+          onUndo={handleUndoDelete}
+          onDismiss={() => setUndoEntry(null)}
+        />
       )}
     </div>
   );

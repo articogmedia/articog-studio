@@ -50,7 +50,17 @@
   "controls": {
     "draw": "Draw",
     "generate": "Generate",
-    "generating": "Generating..."
+    "generating": "Generating...",
+    "creditsSuffix": "credits",
+    "notEnoughCredits": "Not enough credits"
+  },
+  "batch": {
+    "label": "Batch size",
+    "decrease": "Decrease batch size",
+    "increase": "Increase batch size",
+    "queued": "Waiting to generate",
+    "generating": "Generating",
+    "failed": "Generation failed"
   },
   "extend": {
     "continuingGeneration": "Continuing the previous {family} generation"

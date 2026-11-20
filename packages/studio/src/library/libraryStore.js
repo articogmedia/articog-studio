@@ -192,6 +192,21 @@ export async function addAsset(asset) {
   return newAsset;
 }
 
+export async function restoreAsset(asset) {
+  if (!asset?.id) throw new Error("An asset ID is required");
+  let restoredAsset;
+  await updateState((state) => {
+    const existingAsset = state.assets.find((current) => current.id === asset.id);
+    if (existingAsset) {
+      restoredAsset = existingAsset;
+      return state;
+    }
+    restoredAsset = { ...asset };
+    return { ...state, assets: [restoredAsset, ...state.assets] };
+  });
+  return restoredAsset;
+}
+
 export async function listAssets({ kind, projectId, favoritesOnly } = {}) {
   const { assets } = await readState();
   return assets.filter((asset) =>
@@ -236,6 +251,21 @@ export async function removeInput(id) {
     }),
   }));
   return removedInput || null;
+}
+
+export async function restoreInput(input) {
+  if (!input?.id) throw new Error("An input ID is required");
+  let restoredInput;
+  await updateState((state) => {
+    const existingInput = state.inputs.find((current) => current.id === input.id);
+    if (existingInput) {
+      restoredInput = existingInput;
+      return state;
+    }
+    restoredInput = { ...input };
+    return { ...state, inputs: [restoredInput, ...state.inputs] };
+  });
+  return restoredInput;
 }
 
 export async function moveInput(id, projectId) {

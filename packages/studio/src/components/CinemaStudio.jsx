@@ -25,6 +25,9 @@ import en from "../messages/en/cinemaStudio.json";
 import zh from "../messages/zh/cinemaStudio.json";
 import { resolveCopy } from "../i18nUtils";
 import { addAsset } from "../library/libraryStore";
+import { tagFor } from "../utils/referenceTags.js";
+import { useCostEstimate } from "../utils/useCostEstimate.js";
+import { useStudioBalance } from "../utils/StudioBalanceContext.js";
 
 // ─── Constants (inlined from promptUtils) ───────────────────────────────────
 
@@ -565,6 +568,15 @@ export default function CinemaStudio({
   const [canvasUrl, setCanvasUrl] = useState(null); // null = prompt view
   const [fullscreenUrl, setFullscreenUrl] = useState(null);
   const [uploadedImage, setUploadedImage] = useState(null);
+  const estimatedCredits = useCostEstimate(
+    uploadedImage ? "nano-banana-pro-edit" : "nano-banana-pro",
+    { resolution, quality: resolution, batchSize: 1 },
+  );
+  const balance = useStudioBalance();
+  const hasInsufficientBalance = estimatedCredits !== null
+    && balance !== null
+    && Number.isFinite(Number(balance))
+    && Number(balance) < estimatedCredits;
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageUploadProgress, setImageUploadProgress] = useState(0);
   const imageInputRef = useRef(null);
@@ -1207,6 +1219,7 @@ export default function CinemaStudio({
                       alt={copy.referenceImage.alt}
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-40 transition-opacity"
                     />
+                    <span className="absolute left-1 top-1 rounded bg-black/75 px-1 text-[8px] font-semibold leading-4 text-white">{tagFor(0)}</span>
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-white">
                         <path d="M18 6L6 18M6 6l12 12" />
@@ -1319,9 +1332,17 @@ export default function CinemaStudio({
               ) : (
                 <>
                   <span>{copy.prompt.generate}</span>
+                  {estimatedCredits !== null && (
+                    <span> · {estimatedCredits} {copy.prompt.creditsSuffix}</span>
+                  )}
                 </>
               )}
             </PromptAction>
+            {hasInsufficientBalance && (
+              <span className="absolute right-0 top-full mt-1 text-[11px] font-medium text-amber-300">
+                {copy.prompt.notEnoughCredits}
+              </span>
+            )}
           </PromptFooter>
       </PromptComposer>
       {fullscreenUrl && (

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { ImageStudio, VideoStudio, ClippingStudio, MotionControlStudio, VibeMotionStudio, LipSyncStudio, RecastStudio, CinemaStudio, AudioStudio, MarketingStudio, WorkflowStudio, AgentStudio, AppsStudio, AiInfluencerStudio, LayersStudio, AssetsLibrary, getUserBalance } from 'studio';
 import { createProject, listProjects } from '../packages/studio/src/library/libraryStore';
+import { StudioBalanceContext } from '../packages/studio/src/utils/StudioBalanceContext.js';
 
 const DesignAgentStudio = dynamic(() => import('studio').then(mod => mod.DesignAgentStudio), {
   ssr: false,
@@ -1049,6 +1050,7 @@ export default function StandaloneShell({ locale = 'en' }) {
 
         {/* Studio Content */}
         <div className="flex-1 min-h-0 h-full relative overflow-hidden bg-[#000000]">
+        <StudioBalanceContext.Provider value={balance}>
         <div className={activeTab === 'image' ? "h-full w-full" : "hidden"}>
           <ImageStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'image' ? libraryAction : null} onLibraryAvailability={handleImageLibraryAvailability} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
         </div>
@@ -1076,6 +1078,7 @@ export default function StandaloneShell({ locale = 'en' }) {
         <div className={activeTab === 'cinema' ? "h-full w-full" : "hidden"}>
           <CinemaStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'cinema' ? libraryAction : null} onGenerationStart={makeGenerationStartCallback('cinema')} onGenerationEnd={makeGenerationEndCallback('cinema')} onGenerationComplete={makeSuccessCallback('cinema')} onGenerationError={makeErrorCallback('cinema')} />
         </div>
+        </StudioBalanceContext.Provider>
         <div className={activeTab === 'library' ? "h-full w-full" : "hidden"}>
           <AssetsLibrary apiKey={apiKey} locale={locale} copy={copy.assetsLibrary} referenceAvailability={libraryAvailability} onAssetAction={handleLibraryAssetAction} onProjectsChange={setLibraryProjects} />
         </div>

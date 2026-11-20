@@ -59,6 +59,12 @@ import {
 } from "../modelParameters.js";
 import { getCompatibleContinuationSources, getContinuationConfig, isContinuationSourceModel } from "../videoToolCapabilities.js";
 import { getImageInputProfile } from "../videoMediaInputs.js";
+import { tagFor } from "../utils/referenceTags.js";
+import { useCostEstimate } from "../utils/useCostEstimate.js";
+import { useStudioBalance } from "../utils/StudioBalanceContext.js";
+import BatchStepper from "./BatchStepper.jsx";
+import BatchJobTile from "./BatchJobTile.jsx";
+import { runWithConcurrency } from "../utils/runWithConcurrency.js";
 import {
   appendVideoWorkflowMedia,
   buildVideoWorkflowMediaParams,
@@ -165,6 +171,7 @@ function ReferencePreview({
   label = null,
   description = null,
   copy = en,
+  tag = null,
 }) {
   const mediaLabel = label || (type === "image" ? copy.media.image : type === "video" ? copy.media.video : copy.media.audio);
   const actionLabel = description || mediaLabel;
@@ -183,6 +190,11 @@ function ReferencePreview({
               <circle cx="16" cy="16" r="3" />
             </svg>
           </div>
+        )}
+        {tag && (
+          <span className="absolute left-0.5 top-0.5 rounded bg-black/75 px-1 text-[8px] font-semibold leading-4 text-white">
+            {tag}
+          </span>
         )}
         <button
           type="button"
@@ -818,11 +830,24 @@ export default function VideoStudio({
   const [selectedQuality, setSelectedQuality] = useState(
     defaultModel.inputs?.quality?.default || "",
   );
+  const [batchSize, setBatchSize] = useState(1);
+  const estimatedCredits = useCostEstimate(selectedModel, {
+    resolution: selectedResolution || selectedQuality,
+    duration: selectedDuration,
+    quality: selectedQuality,
+    batchSize,
+  });
+  const balance = useStudioBalance();
+  const hasInsufficientBalance = estimatedCredits !== null
+    && balance !== null
+    && Number.isFinite(Number(balance))
+    && Number(balance) < estimatedCredits;
   const [selectedEffect, setSelectedEffect] = useState("");
   const [modelParameterValues, setModelParameterValues] = useState(() =>
     createModelParameterValues(defaultModel),
   );
   const handledAssetActionRef = useRef(null);
+  const batchGenerateRef = useRef(null);
   const [pendingAssetGenerateId, setPendingAssetGenerateId] = useState(null);
 
   // ── upload progress ──
@@ -857,6 +882,7 @@ export default function VideoStudio({
 
   // ── generation / canvas ──
   const [generating, setGenerating] = useState(false);
+  const [batchJobs, setBatchJobs] = useState([]);
   const [generateError, setGenerateError] = useState(null);
   const [fullscreenUrl, setFullscreenUrl] = useState(null);
   const [canvasUrl, setCanvasUrl] = useState(null);
@@ -2153,7 +2179,7 @@ export default function VideoStudio({
   }, []);
 
   // ── generate ──────────────────────────────────────────────────────────────
-  const handleGenerate = useCallback(async () => {
+  const handleGenerate = useCallback(async (batchJob = false) => {
     if (mediaUploading || workflowUploadSlotRef.current) {
       toast.error(copy.errors.waitForCurrentUpload);
       return;
@@ -2164,6 +2190,20 @@ export default function VideoStudio({
     const generationParameterValues = grouped && currentModel.inputs?.omni_reference_task_type
       ? { ...activeParameterValues, omni_reference_task_type: "auto" }
       : activeParameterValues;
+    const seedValue = generationParameterValues.seed;
+    if (
+      batchJob
+      && Object.hasOwn(generationParameterValues, "seed")
+      && (
+        seedValue === ""
+        || seedValue === null
+        || seedValue === undefined
+        || !Number.isFinite(Number(seedValue))
+        || Number(seedValue) === -1
+      )
+    ) {
+      generationParameterValues.seed = Math.floor(Math.random() * 2147483647);
+    }
     const commonParams = grouped
       ? buildVideoCommonPayload(currentModel, {
           ...generationParameterValues,
@@ -2245,8 +2285,47 @@ export default function VideoStudio({
       }
     }
 
-    onGenerationStart?.();
-    setGenerating(true);
+    if (!batchJob && batchSize > 1) {
+      const jobs = Array.from({ length: batchSize }, (_, index) => ({
+        id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
+        status: "queued",
+        error: "",
+      }));
+      const generateBatchJob = batchGenerateRef.current;
+      setBatchJobs(jobs);
+      setGenerating(true);
+      setGenerateError(null);
+      onGenerationStart?.();
+      try {
+        await runWithConcurrency(jobs, 2, async (job) => {
+          setBatchJobs((current) => current.map((item) => (
+            item.id === job.id ? { ...item, status: "running" } : item
+          )));
+          try {
+            const succeeded = await generateBatchJob(true);
+            if (!succeeded) throw new Error(copy.batch.failed);
+            setBatchJobs((current) => current.filter((item) => item.id !== job.id));
+          } catch (error) {
+            const message = formatErrorMessage(error, copy.errors.videoGenerationFailed);
+            setBatchJobs((current) => current.map((item) => (
+              item.id === job.id
+                ? { ...item, status: "failed", error: message }
+                : item
+            )));
+          }
+        });
+      } finally {
+        setGenerating(false);
+        onGenerationEnd?.();
+      }
+      return;
+    }
+
+    if (!batchJob) {
+      setBatchJobs([]);
+      onGenerationStart?.();
+      setGenerating(true);
+    }
     setGenerateError(null);
 
     try {
@@ -2505,14 +2584,18 @@ export default function VideoStudio({
             type: "video",
           });
       }
+      if (batchJob) return true;
     } catch (e) {
+      if (batchJob) throw e;
       console.error("[VideoStudio]", e);
       const errMsg = formatErrorMessage(e, copy.errors.videoGenerationFailed);
       if (onGenerationError) onGenerationError(errMsg);
       else toast.error(errMsg);
     } finally {
-      setGenerating(false);
-      onGenerationEnd?.();
+      if (!batchJob) {
+        setGenerating(false);
+        onGenerationEnd?.();
+      }
     }
   }, [
     apiKey,
@@ -2526,6 +2609,7 @@ export default function VideoStudio({
     selectedFamily,
     selectedAr,
     selectedDuration,
+    batchSize,
     selectedResolution,
     selectedQuality,
     selectedEffect,
@@ -2550,6 +2634,7 @@ export default function VideoStudio({
     onGenerationStart,
     selectedProjectId,
   ]);
+  batchGenerateRef.current = handleGenerate;
 
   useEffect(() => {
     if (!assetAction || handledAssetActionRef.current === assetAction.id) return;
@@ -2778,8 +2863,11 @@ export default function VideoStudio({
     >
       {/* ── CENTRAL GALLERY AREA ── */}
       <div className="flex-1 w-full max-w-7xl mx-auto overflow-y-auto custom-scrollbar pb-40 lg:pb-32 px-2">
-        {history.length > 0 ? (
+        {history.length > 0 || batchJobs.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full pt-4 animate-fade-in-up">
+            {batchJobs.map((job) => (
+              <BatchJobTile key={job.id} job={job} kind="video" copy={copy.batch} />
+            ))}
             {history.map((entry, idx) => {
               const isSeedance2 = isContinuationSourceModel("seedance-2-extend", entry.model);
               return (
@@ -2972,6 +3060,15 @@ export default function VideoStudio({
                 <>
                   {workflowMediaSlots.flatMap((slot) => {
                     const values = activeWorkflowMediaDraft?.[slot.id] || [];
+                    const slotIndex = workflowMediaSlots.indexOf(slot);
+                    const imageTagOffset = workflowMediaSlots
+                      .slice(0, slotIndex)
+                      .filter((previousSlot) => previousSlot.mediaType === "image")
+                      .reduce(
+                        (count, previousSlot) =>
+                          count + (activeWorkflowMediaDraft?.[previousSlot.id]?.length || 0),
+                        0,
+                      );
                     return values.map((url, index) => (
                       <ReferencePreview
                         copy={copy}
@@ -2979,6 +3076,7 @@ export default function VideoStudio({
                         type={slot.mediaType}
                         url={url}
                         index={index}
+                        tag={slot.mediaType === "image" ? tagFor(imageTagOffset + index) : null}
                         onRemove={(itemIndex) =>
                           removeWorkflowMedia(slot.id, itemIndex)
                         }
@@ -3045,6 +3143,7 @@ export default function VideoStudio({
                   type="image"
                   url={url}
                   index={index}
+                  tag={tagFor(index)}
                   onRemove={removeImageAtIndex}
                   label={
                     uploadedImageUrls.length > 1
@@ -3060,6 +3159,7 @@ export default function VideoStudio({
                   type="image"
                   url={uploadedEndImageUrl}
                   index={0}
+                  tag={tagFor(uploadedImageUrls.length)}
                   onRemove={clearEndImage}
                   label={copy.media.endFrame}
                 />
@@ -3688,6 +3788,13 @@ export default function VideoStudio({
               )}
             </PromptControls>
 
+            <BatchStepper
+              value={batchSize}
+              onChange={setBatchSize}
+              copy={copy.batch}
+              disabled={generating || mediaUploading}
+            />
+
             {/* Generate button */}
             <PromptAction
               onClick={handleGenerate}
@@ -3703,9 +3810,17 @@ export default function VideoStudio({
               ) : (
                 <>
                   <span>{copy.controls.generate}</span>
+                  {estimatedCredits !== null && (
+                    <span> · {estimatedCredits} {copy.controls.creditsSuffix}</span>
+                  )}
                 </>
               )}
             </PromptAction>
+            {hasInsufficientBalance && (
+              <span className="absolute right-0 top-full mt-1 text-[11px] font-medium text-amber-300">
+                {copy.controls.notEnoughCredits}
+              </span>
+            )}
           </PromptFooter>
       </PromptComposer>
 

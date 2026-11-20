@@ -38,7 +38,9 @@
   "prompt": {
     "placeholder": "描述你的电影场景...",
     "generating": "生成中...",
-    "generate": "拍摄"
+    "generate": "拍摄",
+    "creditsSuffix": "积分",
+    "notEnoughCredits": "积分不足"
   },
   "fullscreen": {
     "alt": "全屏预览"

@@ -66,6 +66,12 @@ import en from "../messages/en/imageStudio.json";
 import zh from "../messages/zh/imageStudio.json";
 import { resolveCopy } from "../i18nUtils";
 import { addAsset } from "../library/libraryStore";
+import { tagFor } from "../utils/referenceTags.js";
+import { useCostEstimate } from "../utils/useCostEstimate.js";
+import { useStudioBalance } from "../utils/StudioBalanceContext.js";
+import BatchStepper from "./BatchStepper.jsx";
+import BatchJobTile from "./BatchJobTile.jsx";
+import { runWithConcurrency } from "../utils/runWithConcurrency.js";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -1018,6 +1024,7 @@ export default function ImageStudio({
     createModelParameterValues(t2iModels[0]),
   );
   const handledAssetActionRef = useRef(null);
+  const batchGenerateRef = useRef(null);
   const [pendingAssetGenerateId, setPendingAssetGenerateId] = useState(null);
 
   // ── Prompt / upload state ───────────────────────────────────────────────
@@ -1030,6 +1037,7 @@ export default function ImageStudio({
   // ── UI state ────────────────────────────────────────────────────────────
   const [dropdownOpen, setDropdownOpen] = useState(null); // 'model' | 'ar' | 'quality' | null
   const [generating, setGenerating] = useState(false);
+  const [batchJobs, setBatchJobs] = useState([]);
   const [generateError, setGenerateError] = useState(null);
   const [fullscreenUrl, setFullscreenUrl] = useState(null);
   const [isDrawModalOpen, setIsDrawModalOpen] = useState(false);
@@ -1038,6 +1046,15 @@ export default function ImageStudio({
   const [currentImageUrl, setCurrentImageUrl] = useState(null);
   const [activeHistoryIdx, setActiveHistoryIdx] = useState(0);
   const [batchSize, setBatchSize] = useState(1);
+  const estimatedCredits = useCostEstimate(selectedModelId, {
+    quality: selectedQuality,
+    batchSize,
+  });
+  const balance = useStudioBalance();
+  const hasInsufficientBalance = estimatedCredits !== null
+    && balance !== null
+    && Number.isFinite(Number(balance))
+    && Number(balance) < estimatedCredits;
   const [localHistory, setLocalHistory] = useState([]); // [{id,url,prompt,model,aspect_ratio,timestamp}]
 
   // Use prop history if provided, otherwise local
@@ -1404,8 +1421,8 @@ export default function ImageStudio({
   };
 
   // ── Generation ───────────────────────────────────────────────────────────
-  const handleGenerate = async () => {
-    if (generating) return;
+  const handleGenerate = async (batchJob = false) => {
+    if (generating && !batchJob) return;
 
     if (imageMode) {
       if (uploadedImageUrls.length === 0) {
@@ -1429,13 +1446,52 @@ export default function ImageStudio({
       }
     }
 
-    onGenerationStart?.();
-    setGenerating(true);
+    if (!batchJob && batchSize > 1) {
+      const jobs = Array.from({ length: batchSize }, (_, index) => ({
+        id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
+        status: "queued",
+        error: "",
+      }));
+      const generateBatchJob = batchGenerateRef.current;
+      setBatchJobs(jobs);
+      setGenerating(true);
+      setGenerateError(null);
+      onGenerationStart?.();
+      try {
+        await runWithConcurrency(jobs, 2, async (job) => {
+          setBatchJobs((current) => current.map((item) => (
+            item.id === job.id ? { ...item, status: "running" } : item
+          )));
+          try {
+            const succeeded = await generateBatchJob(true);
+            if (!succeeded) throw new Error(copy.batch.failed);
+            setBatchJobs((current) => current.filter((item) => item.id !== job.id));
+          } catch (error) {
+            const message = formatErrorMessage(error, copy.errors.generationFailed);
+            setBatchJobs((current) => current.map((item) => (
+              item.id === job.id
+                ? { ...item, status: "failed", error: message }
+                : item
+            )));
+          }
+        });
+      } finally {
+        setGenerating(false);
+        onGenerationEnd?.();
+      }
+      return;
+    }
+
+    if (!batchJob) {
+      setBatchJobs([]);
+      onGenerationStart?.();
+      setGenerating(true);
+    }
     setGenerateError(null);
 
     try {
       const results = await Promise.all(
-        Array.from({ length: batchSize }).map(async () => {
+        Array.from({ length: batchJob ? 1 : batchSize }).map(async () => {
           if (selectedVariant?.model?.provider === "byteplus") {
             return generateBytePlusImage({
               model: selectedVariant.model.endpoint,
@@ -1530,7 +1586,9 @@ export default function ImageStudio({
           });
         }
       });
+      if (batchJob) return results.some((res) => res?.url);
     } catch (e) {
+      if (batchJob) throw e;
       console.error("[ImageStudio] Generation failed:", e);
       const errMsg = formatErrorMessage(e, copy.errors.generationFailed);
       if (onGenerationError) {
@@ -1540,10 +1598,13 @@ export default function ImageStudio({
       }
       else toast.error(errMsg);
     } finally {
-      setGenerating(false);
-      onGenerationEnd?.();
+      if (!batchJob) {
+        setGenerating(false);
+        onGenerationEnd?.();
+      }
     }
   };
+  batchGenerateRef.current = handleGenerate;
 
   useEffect(() => {
     if (!assetAction || handledAssetActionRef.current === assetAction.id) return;
@@ -1605,8 +1666,11 @@ export default function ImageStudio({
       
       {/* ── CENTRAL GALLERY AREA ── */}
       <div className="flex-1 w-full max-w-7xl mx-auto overflow-y-auto custom-scrollbar pb-40 lg:pb-32 px-2">
-        {history.length > 0 ? (
+        {history.length > 0 || batchJobs.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full pt-4 animate-fade-in-up">
+            {batchJobs.map((job) => (
+              <BatchJobTile key={job.id} job={job} kind="image" copy={copy.batch} />
+            ))}
             {history.map((entry, idx) => (
               <div
                 key={entry.id || idx}
@@ -1759,6 +1823,7 @@ export default function ImageStudio({
               {uploadedImageUrls && uploadedImageUrls.length > 0 && uploadedImageUrls.map((url, idx) => (
                 <div key={url} className={PROMPT_MEDIA_PREVIEW_CLASS}>
                   <img src={url} alt="" className="w-full h-full object-cover" />
+                  <span className="absolute left-0.5 top-0.5 rounded bg-black/75 px-1 text-[8px] font-semibold leading-4 text-white">{tagFor(idx)}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -2025,6 +2090,13 @@ export default function ImageStudio({
               </button>
             </PromptControls>
 
+            <BatchStepper
+              value={batchSize}
+              onChange={setBatchSize}
+              copy={copy.batch}
+              disabled={generating}
+            />
+
             {/* Generate button */}
             <PromptAction
               onClick={handleGenerate}
@@ -2038,9 +2110,17 @@ export default function ImageStudio({
               ) : (
                 <>
                   <span>{copy.promptBar.generateButton}</span>
+                  {estimatedCredits !== null && (
+                    <span> · {estimatedCredits} {copy.promptBar.creditsSuffix}</span>
+                  )}
                 </>
               )}
             </PromptAction>
+            {hasInsufficientBalance && (
+              <span className="absolute right-0 top-full mt-1 text-[11px] font-medium text-amber-300">
+                {copy.promptBar.notEnoughCredits}
+              </span>
+            )}
           </PromptFooter>
       </PromptComposer>
 

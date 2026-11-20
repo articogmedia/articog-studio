@@ -48,7 +48,17 @@
     "effectFallback": "效果",
     "drawButton": "绘制",
     "generating": "生成中...",
-    "generateButton": "生成"
+    "generateButton": "生成",
+    "creditsSuffix": "积分",
+    "notEnoughCredits": "积分不足"
+  },
+  "batch": {
+    "label": "生成数量",
+    "decrease": "减少生成数量",
+    "increase": "增加生成数量",
+    "queued": "等待生成",
+    "generating": "生成中",
+    "failed": "生成失败"
   },
   "popovers": {
     "model": "模型",

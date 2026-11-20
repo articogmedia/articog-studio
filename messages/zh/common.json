@@ -120,6 +120,9 @@
     "reference": "参考图 {count}/{max}",
     "startFrame": "起始帧 {count}/{max}",
     "endFrame": "结束帧 {count}/{max}"
+    ,"undoDeletedMessage": "已删除。"
+    ,"undo": "撤销"
+    ,"undoRestoreError": "无法恢复已删除的内容。"
   },
   "apiKeyModal": {
     "title": "Articog Studio",
