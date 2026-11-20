@@ -61,6 +61,7 @@ import {
 import en from "../messages/en/imageStudio.json";
 import zh from "../messages/zh/imageStudio.json";
 import { resolveCopy } from "../i18nUtils";
+import { addAsset } from "../library/libraryStore";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -985,6 +986,8 @@ export default function ImageStudio({
   droppedFiles,
   onFilesHandled,
   locale = "en",
+  selectedProjectId = "default",
+  assetAction = null,
 }) {
   const copy = resolveCopy(en, zh, locale);
   const LEGACY_PERSIST_KEY = "hg_image_studio_persistent";
@@ -1009,6 +1012,8 @@ export default function ImageStudio({
   const [modelParameterValues, setModelParameterValues] = useState(() =>
     createModelParameterValues(t2iModels[0]),
   );
+  const handledAssetActionRef = useRef(null);
+  const [pendingAssetGenerateId, setPendingAssetGenerateId] = useState(null);
 
   // ── Prompt / upload state ───────────────────────────────────────────────
   const [prompt, setPrompt] = useState("");
@@ -1464,6 +1469,29 @@ export default function ImageStudio({
             timestamp: new Date().toISOString(),
           };
           addToHistory(entry);
+          addAsset({
+            kind: "image",
+            url: res.url,
+            prompt: prompt.trim(),
+            model: selectedModelId,
+            endpoint: selectedModelId,
+            settings: {
+              aspect_ratio: selectedAr,
+              resolution: selectedQuality,
+              effect: selectedEffect,
+              modelParameterValues,
+              imageMode,
+            },
+            referenceUrls: [
+              ...uploadedImageUrls,
+              ...(swapImageUrl ? [swapImageUrl] : []),
+            ],
+            costCredits: res.costCredits ?? res.cost ?? null,
+            aspectRatio: selectedAr,
+            resolution: selectedQuality,
+            format: res.format || null,
+            projectId: selectedProjectId,
+          }).catch((error) => console.error("[ImageStudio] Could not save asset:", error));
           onGenerationComplete?.({
             url: res.url,
             model: selectedModelId,
@@ -1486,6 +1514,46 @@ export default function ImageStudio({
       onGenerationEnd?.();
     }
   };
+
+  useEffect(() => {
+    if (!assetAction || handledAssetActionRef.current === assetAction.id) return;
+    handledAssetActionRef.current = assetAction.id;
+    const { asset, action } = assetAction;
+    const family = imageModelCatalog.familyByVariantId.get(asset.model);
+    const variant = imageModelCatalog.variantById.get(asset.model);
+    const referenceVariant = action === "reference" && family
+      ? getImageReferenceVariant(imageModelCatalog, family, asset.model)
+      : null;
+    const targetVariant = referenceVariant || variant;
+    if (targetVariant && family) {
+      applySelectedVariant(
+        targetVariant,
+        referenceVariant?.mode || (asset.settings?.imageMode ? "i2i" : "t2i"),
+        family,
+      );
+    }
+    setPrompt(asset.settings?.prompt || asset.prompt || "");
+    setSelectedAr(asset.aspectRatio || asset.settings?.aspect_ratio || "1:1");
+    setSelectedQuality(asset.resolution || asset.settings?.resolution || null);
+    if (asset.settings?.modelParameterValues) {
+      setModelParameterValues((values) => ({
+        ...values,
+        ...asset.settings.modelParameterValues,
+      }));
+    }
+    setUploadedImageUrls(
+      action === "reference"
+        ? [asset.url]
+        : asset.referenceUrls || [],
+    );
+    if (action === "recreate") setPendingAssetGenerateId(assetAction.id);
+  }, [assetAction, applySelectedVariant]);
+
+  useEffect(() => {
+    if (!pendingAssetGenerateId) return;
+    setPendingAssetGenerateId(null);
+    window.setTimeout(() => handleGenerate(), 0);
+  }, [pendingAssetGenerateId, handleGenerate]);
 
   const placeholderText =
     uploadedImageUrls.length > 1

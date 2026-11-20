@@ -24,6 +24,7 @@ import {
 import en from "../messages/en/cinemaStudio.json";
 import zh from "../messages/zh/cinemaStudio.json";
 import { resolveCopy } from "../i18nUtils";
+import { addAsset } from "../library/libraryStore";
 
 // ─── Constants (inlined from promptUtils) ───────────────────────────────────
 
@@ -537,6 +538,8 @@ export default function CinemaStudio({
   onGenerationError,
   historyItems,
   locale = "en",
+  selectedProjectId = "default",
+  assetAction = null,
 }) {
   const copy = resolveCopy(en, zh, locale);
   const LEGACY_PERSIST_KEY = "hg_cinema_studio_persistent";
@@ -571,6 +574,8 @@ export default function CinemaStudio({
 
   // ── Internal history state (used when historyItems prop is not provided) ──
   const [internalHistory, setInternalHistory] = useState([]);
+  const handledAssetActionRef = useRef(null);
+  const [pendingAssetGenerateId, setPendingAssetGenerateId] = useState(null);
 
   // ── Dropdown state ──
   const [openDropdown, setOpenDropdown] = useState(null); // 'ar' | 'res' | null
@@ -724,6 +729,7 @@ export default function CinemaStudio({
       });
 
       if (res && res.url) {
+        const model = uploadedImage ? "nano-banana-pro-edit" : "nano-banana-pro";
         const entry = {
           url: res.url,
           timestamp: Date.now(),
@@ -744,11 +750,29 @@ export default function CinemaStudio({
         }
 
         setCanvasUrl(res.url);
+        addAsset({
+          kind: "image",
+          url: res.url,
+          prompt: finalPrompt,
+          model,
+          endpoint: model,
+          settings: {
+            ...settings,
+            aspect_ratio: settings.aspect_ratio,
+            resolution,
+          },
+          referenceUrls: uploadedImage ? [uploadedImage] : [],
+          costCredits: res.costCredits ?? res.cost ?? null,
+          aspectRatio: settings.aspect_ratio,
+          resolution,
+          format: res.format || null,
+          projectId: selectedProjectId,
+        }).catch((error) => console.error("[CinemaStudio] Could not save asset:", error));
 
         if (onGenerationComplete) {
           onGenerationComplete({
             url: res.url,
-            model: "nano-banana-pro",
+            model,
             prompt: basePrompt,
             type: "cinema",
           });
@@ -773,7 +797,33 @@ export default function CinemaStudio({
     onGenerationError,
     onGenerationStart,
     historyItems,
+    selectedProjectId,
   ]);
+
+  useEffect(() => {
+    if (!assetAction || handledAssetActionRef.current === assetAction.id) return;
+    handledAssetActionRef.current = assetAction.id;
+    const { asset, action } = assetAction;
+    setSettings((current) => ({
+      ...current,
+      ...asset.settings,
+      prompt: asset.settings?.prompt || asset.prompt || "",
+      aspect_ratio: asset.aspectRatio || asset.settings?.aspect_ratio || current.aspect_ratio,
+    }));
+    setResolution(asset.resolution || asset.settings?.resolution || "2K");
+    setUploadedImage(
+      action === "reference"
+        ? asset.url
+        : asset.referenceUrls?.[0] || null,
+    );
+    if (action === "recreate") setPendingAssetGenerateId(assetAction.id);
+  }, [assetAction]);
+
+  useEffect(() => {
+    if (!pendingAssetGenerateId) return;
+    setPendingAssetGenerateId(null);
+    window.setTimeout(() => handleGenerate(), 0);
+  }, [pendingAssetGenerateId, handleGenerate]);
 
   // ── Regenerate ──
   const handleRegenerate = useCallback(() => {
