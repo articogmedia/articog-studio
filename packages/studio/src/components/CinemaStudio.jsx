@@ -762,6 +762,7 @@ export default function CinemaStudio({
             resolution,
           },
           referenceUrls: uploadedImage ? [uploadedImage] : [],
+          creditsCharged: res.costCredits ?? res.cost ?? null,
           costCredits: res.costCredits ?? res.cost ?? null,
           aspectRatio: settings.aspect_ratio,
           resolution,
@@ -804,18 +805,17 @@ export default function CinemaStudio({
     if (!assetAction || handledAssetActionRef.current === assetAction.id) return;
     handledAssetActionRef.current = assetAction.id;
     const { asset, action } = assetAction;
+    const url = assetAction.url || asset.url;
     setSettings((current) => ({
       ...current,
       ...asset.settings,
-      prompt: asset.settings?.prompt || asset.prompt || "",
+      prompt: asset.settings?.prompt || asset.prompt || current.prompt,
       aspect_ratio: asset.aspectRatio || asset.settings?.aspect_ratio || current.aspect_ratio,
     }));
-    setResolution(asset.resolution || asset.settings?.resolution || "2K");
-    setUploadedImage(
-      action === "reference"
-        ? asset.url
-        : asset.referenceUrls?.[0] || null,
-    );
+    if (asset.resolution || asset.settings?.resolution) {
+      setResolution(asset.resolution || asset.settings.resolution);
+    }
+    setUploadedImage(action === "reference" ? url : asset.referenceUrls?.[0] || null);
     if (action === "recreate") setPendingAssetGenerateId(assetAction.id);
   }, [assetAction]);
 

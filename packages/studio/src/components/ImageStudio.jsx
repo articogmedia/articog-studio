@@ -36,6 +36,10 @@ import {
   getModelMediaCapabilities,
 } from "../modelCapabilities.js";
 import {
+  getAuxiliaryImageInputs,
+  getImageInputContract,
+} from "../imageInputContracts.js";
+import {
   buildSupplementalInputPayload,
   createModelParameterValues,
   getSupplementalModelInputs,
@@ -988,6 +992,7 @@ export default function ImageStudio({
   locale = "en",
   selectedProjectId = "default",
   assetAction = null,
+  onLibraryAvailability,
 }) {
   const copy = resolveCopy(en, zh, locale);
   const LEGACY_PERSIST_KEY = "hg_image_studio_persistent";
@@ -1242,6 +1247,30 @@ export default function ImageStudio({
     ? getModelMediaCapabilities(referenceVariant.model).image.maxItems
     : 1;
 
+  useEffect(() => {
+    const model = referenceVariant?.model;
+    const mode = referenceVariant?.mode || currentMode;
+    const contract = model ? getImageInputContract(model, mode) : null;
+    const auxiliaryInputs = model ? getAuxiliaryImageInputs(model, mode) : [];
+    const hasImageInputContract = Boolean(
+      contract
+      && (referenceImageLimit > 0 || contract.primaryImageRequired || auxiliaryInputs.length > 0),
+    );
+    onLibraryAvailability?.({
+      supportsReferences: Boolean(model && hasImageInputContract && referenceImageLimit > 0),
+      referenceCount: uploadedImageUrls.length,
+      maxReferences: referenceImageLimit,
+      modelName: model?.name || selectedModelDisplayName,
+    });
+  }, [
+    currentMode,
+    onLibraryAvailability,
+    referenceImageLimit,
+    referenceVariant,
+    selectedModelDisplayName,
+    uploadedImageUrls.length,
+  ]);
+
   const applySelectedVariant = useCallback((variant, mode, family) => {
     const model = variant.model;
     setImageUploadMessage("");
@@ -1486,6 +1515,7 @@ export default function ImageStudio({
               ...uploadedImageUrls,
               ...(swapImageUrl ? [swapImageUrl] : []),
             ],
+            creditsCharged: res.costCredits ?? res.cost ?? null,
             costCredits: res.costCredits ?? res.cost ?? null,
             aspectRatio: selectedAr,
             resolution: selectedQuality,
@@ -1519,6 +1549,7 @@ export default function ImageStudio({
     if (!assetAction || handledAssetActionRef.current === assetAction.id) return;
     handledAssetActionRef.current = assetAction.id;
     const { asset, action } = assetAction;
+    const url = assetAction.url || asset.url;
     const family = imageModelCatalog.familyByVariantId.get(asset.model);
     const variant = imageModelCatalog.variantById.get(asset.model);
     const referenceVariant = action === "reference" && family
@@ -1532,9 +1563,15 @@ export default function ImageStudio({
         family,
       );
     }
-    setPrompt(asset.settings?.prompt || asset.prompt || "");
-    setSelectedAr(asset.aspectRatio || asset.settings?.aspect_ratio || "1:1");
-    setSelectedQuality(asset.resolution || asset.settings?.resolution || null);
+    if (asset.prompt != null || asset.settings?.prompt != null) {
+      setPrompt(asset.settings?.prompt || asset.prompt || "");
+    }
+    if (asset.aspectRatio || asset.settings?.aspect_ratio) {
+      setSelectedAr(asset.aspectRatio || asset.settings.aspect_ratio);
+    }
+    if (asset.resolution || asset.settings?.resolution) {
+      setSelectedQuality(asset.resolution || asset.settings.resolution);
+    }
     if (asset.settings?.modelParameterValues) {
       setModelParameterValues((values) => ({
         ...values,
@@ -1543,7 +1580,7 @@ export default function ImageStudio({
     }
     setUploadedImageUrls(
       action === "reference"
-        ? [asset.url]
+        ? [url]
         : asset.referenceUrls || [],
     );
     if (action === "recreate") setPendingAssetGenerateId(assetAction.id);

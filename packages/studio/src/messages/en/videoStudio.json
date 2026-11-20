@@ -78,6 +78,7 @@
     "modelChangedDuringUpload": "The model changed during upload. Please add the file again.",
     "modelDoesNotSupportReference": "{family} does not support {mediaType} references.",
     "sourceDoesNotAcceptImages": "The selected source does not accept images.",
+    "imageFrameUnsupported": "The selected video model does not accept image frames.",
     "waitForCurrentUpload": "Wait for the current upload to finish, then add these files again.",
     "imageExceeds10MB": "Image exceeds 10MB limit.",
     "labelExceedsLimit": "{label} exceeds {limit}MB limit.",

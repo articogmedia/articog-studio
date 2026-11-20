@@ -355,6 +355,22 @@ export default function StandaloneShell({ locale = 'en' }) {
   const [libraryProjects, setLibraryProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('default');
   const [libraryAction, setLibraryAction] = useState(null);
+  const [libraryAvailability, setLibraryAvailability] = useState({});
+  const updateLibraryAvailability = useCallback((key, availability) => {
+    setLibraryAvailability((current) => (
+      JSON.stringify(current[key]) === JSON.stringify(availability)
+        ? current
+        : { ...current, [key]: availability }
+    ));
+  }, []);
+  const handleImageLibraryAvailability = useCallback(
+    (availability) => updateLibraryAvailability('image', availability),
+    [updateLibraryAvailability],
+  );
+  const handleVideoLibraryAvailability = useCallback(
+    (availability) => updateLibraryAvailability('video', availability),
+    [updateLibraryAvailability],
+  );
 
   const [balance, setBalance] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -555,12 +571,19 @@ export default function StandaloneShell({ locale = 'en' }) {
   }, [studioPath]);
 
   const handleLibraryAssetAction = (asset, action) => {
-    const targetTab = asset.kind === 'video'
+    const targetTab = action === 'start_frame' || action === 'end_frame'
       ? 'video'
-      : asset.model?.startsWith('nano-banana-pro')
-        ? 'cinema'
-        : 'image';
-    setLibraryAction({ id: `${Date.now()}-${Math.random()}`, asset, action });
+      : asset.kind === 'video'
+        ? 'video'
+        : asset.model?.startsWith('nano-banana-pro')
+          ? 'cinema'
+          : 'image';
+    setLibraryAction({
+      id: `${Date.now()}-${Math.random()}`,
+      asset,
+      action,
+      url: asset.url,
+    });
     handleTabChange(targetTab);
   };
 
@@ -1027,13 +1050,13 @@ export default function StandaloneShell({ locale = 'en' }) {
         {/* Studio Content */}
         <div className="flex-1 min-h-0 h-full relative overflow-hidden bg-[#000000]">
         <div className={activeTab === 'image' ? "h-full w-full" : "hidden"}>
-          <ImageStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'image' ? libraryAction : null} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
+          <ImageStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'image' ? libraryAction : null} onLibraryAvailability={handleImageLibraryAvailability} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
         </div>
         <div className={activeTab === 'layers' ? "h-full w-full" : "hidden"}>
           <LayersStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('layers')} onGenerationEnd={makeGenerationEndCallback('layers')} onGenerationComplete={makeSuccessCallback('layers')} onGenerationError={makeErrorCallback('layers')} />
         </div>
         <div className={activeTab === 'video' ? "h-full w-full" : "hidden"}>
-          <VideoStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'video' ? libraryAction : null} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('video')} onGenerationEnd={makeGenerationEndCallback('video')} onGenerationComplete={makeSuccessCallback('video')} onGenerationError={makeErrorCallback('video')} />
+          <VideoStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'video' ? libraryAction : null} onLibraryAvailability={handleVideoLibraryAvailability} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('video')} onGenerationEnd={makeGenerationEndCallback('video')} onGenerationComplete={makeSuccessCallback('video')} onGenerationError={makeErrorCallback('video')} />
         </div>
         <div className={activeTab === 'clipping' ? "h-full w-full" : "hidden"}>
           <ClippingStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('clipping')} onGenerationEnd={makeGenerationEndCallback('clipping')} onGenerationComplete={makeSuccessCallback('clipping')} onGenerationError={makeErrorCallback('clipping')} />
@@ -1054,7 +1077,7 @@ export default function StandaloneShell({ locale = 'en' }) {
           <CinemaStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'cinema' ? libraryAction : null} onGenerationStart={makeGenerationStartCallback('cinema')} onGenerationEnd={makeGenerationEndCallback('cinema')} onGenerationComplete={makeSuccessCallback('cinema')} onGenerationError={makeErrorCallback('cinema')} />
         </div>
         <div className={activeTab === 'library' ? "h-full w-full" : "hidden"}>
-          <AssetsLibrary onAssetAction={handleLibraryAssetAction} onProjectsChange={setLibraryProjects} />
+          <AssetsLibrary apiKey={apiKey} locale={locale} copy={copy.assetsLibrary} referenceAvailability={libraryAvailability} onAssetAction={handleLibraryAssetAction} onProjectsChange={setLibraryProjects} />
         </div>
         <div className={activeTab === 'audio' ? "h-full w-full" : "hidden"}>
           <AudioStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('audio')} onGenerationEnd={makeGenerationEndCallback('audio')} onGenerationComplete={makeSuccessCallback('audio')} onGenerationError={makeErrorCallback('audio')} />

@@ -16,7 +16,7 @@ function createDefaultProject() {
 }
 
 function createInitialState() {
-  return { projects: [createDefaultProject()], assets: [] };
+  return { projects: [createDefaultProject()], assets: [], inputs: [] };
 }
 
 function createId() {
@@ -29,6 +29,7 @@ function createId() {
 function normalizeState(state) {
   const projects = Array.isArray(state?.projects) ? state.projects : [];
   const assets = Array.isArray(state?.assets) ? state.assets : [];
+  const inputs = Array.isArray(state?.inputs) ? state.inputs : [];
   const defaultProject = projects.find((project) => project.id === DEFAULT_PROJECT_ID);
   return {
     projects: defaultProject
@@ -37,6 +38,7 @@ function normalizeState(state) {
       )
       : [createDefaultProject(), ...projects],
     assets,
+    inputs,
   };
 }
 
@@ -165,6 +167,9 @@ export async function deleteProject(id) {
     assets: state.assets.map((asset) =>
       asset.projectId === id ? { ...asset, projectId: DEFAULT_PROJECT_ID } : asset,
     ),
+    inputs: state.inputs.map((input) =>
+      input.projectId === id ? { ...input, projectId: DEFAULT_PROJECT_ID } : input,
+    ),
   }));
   return true;
 }
@@ -179,6 +184,7 @@ export async function addAsset(asset) {
         ? asset.projectId
         : DEFAULT_PROJECT_ID,
       favorite: Boolean(asset.favorite),
+      creditsCharged: asset.creditsCharged ?? asset.costCredits ?? null,
       createdAt: asset.createdAt || new Date().toISOString(),
     };
     return { ...state, assets: [newAsset, ...state.assets] };
@@ -193,6 +199,61 @@ export async function listAssets({ kind, projectId, favoritesOnly } = {}) {
     && (!projectId || asset.projectId === projectId)
     && (!favoritesOnly || asset.favorite),
   );
+}
+
+export async function addInput(input) {
+  if (!input || !["image", "video"].includes(input.kind) || !input.url) {
+    throw new Error("An input kind and URL are required");
+  }
+  let newInput;
+  await updateState((state) => {
+    newInput = {
+      ...input,
+      id: input.id || createId(),
+      projectId: state.projects.some((project) => project.id === input.projectId)
+        ? input.projectId
+        : DEFAULT_PROJECT_ID,
+      createdAt: input.createdAt || new Date().toISOString(),
+    };
+    return { ...state, inputs: [newInput, ...state.inputs] };
+  });
+  return newInput;
+}
+
+export async function listInputs({ projectId } = {}) {
+  const { inputs } = await readState();
+  return inputs.filter((input) => !projectId || input.projectId === projectId);
+}
+
+export async function removeInput(id) {
+  let removedInput;
+  await updateState((state) => ({
+    ...state,
+    inputs: state.inputs.filter((input) => {
+      if (input.id !== id) return true;
+      removedInput = input;
+      return false;
+    }),
+  }));
+  return removedInput || null;
+}
+
+export async function moveInput(id, projectId) {
+  let movedInput;
+  await updateState((state) => {
+    if (!state.projects.some((project) => project.id === projectId)) {
+      throw new Error("Project does not exist");
+    }
+    return {
+      ...state,
+      inputs: state.inputs.map((input) => {
+        if (input.id !== id) return input;
+        movedInput = { ...input, projectId };
+        return movedInput;
+      }),
+    };
+  });
+  return movedInput || null;
 }
 
 export async function getAsset(id) {

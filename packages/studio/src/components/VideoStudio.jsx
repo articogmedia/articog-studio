@@ -58,6 +58,7 @@ import {
   mergeModelParameterValues,
 } from "../modelParameters.js";
 import { getCompatibleContinuationSources, getContinuationConfig, isContinuationSourceModel } from "../videoToolCapabilities.js";
+import { getImageInputProfile } from "../videoMediaInputs.js";
 import {
   appendVideoWorkflowMedia,
   buildVideoWorkflowMediaParams,
@@ -786,6 +787,7 @@ export default function VideoStudio({
   locale = "en",
   selectedProjectId = "default",
   assetAction = null,
+  onLibraryAvailability,
 }) {
   const copy = useMemo(() => resolveCopy(en, zh, locale), [locale]);
   const LEGACY_PERSIST_KEY = "hg_video_studio_persistent";
@@ -1203,7 +1205,47 @@ export default function VideoStudio({
       : [],
     [selectedVariant, selectedWorkflowId],
   );
-  const currentModelCapabilities = getModelMediaCapabilities(selectedVariant?.model);
+  const currentModelCapabilities = useMemo(
+    () => getModelMediaCapabilities(selectedVariant?.model),
+    [selectedVariant],
+  );
+  const imageInputProfile = useMemo(
+    () => getImageInputProfile(selectedVariant?.model),
+    [selectedVariant],
+  );
+  useEffect(() => {
+    const imageCapability = currentModelCapabilities.image;
+    const videoCapability = currentModelCapabilities.video;
+    const isReferenceList = imageInputProfile.kind === "references";
+    onLibraryAvailability?.({
+      supportsReferences: imageCapability.maxItems > 0,
+      referenceCount: isReferenceList
+        ? uploadedImageUrls.length
+        : Number(Boolean(uploadedImageUrls[0])),
+      maxReferences: isReferenceList ? imageInputProfile.maxImages : 1,
+      supportsStartFrame: imageCapability.maxItems > 0 && imageInputProfile.kind === "frames",
+      startFrameLimit: imageInputProfile.kind === "frames"
+        ? Math.min(1, imageCapability.maxItems)
+        : 0,
+      supportsEndFrame: imageInputProfile.supportsEndFrame,
+      endFrameLimit: imageInputProfile.supportsEndFrame ? 1 : 0,
+      startFrameCount: Number(Boolean(uploadedImageUrls[0])),
+      endFrameCount: Number(Boolean(uploadedEndImageUrl || uploadedImageUrls[1])),
+      supportsVideoReferences: videoCapability.maxItems > 0,
+      videoReferenceCount: uploadedVideoUrls.length,
+      maxVideoReferences: videoCapability.maxItems,
+      modelName: selectedVariant?.model?.name || selectedModel,
+    });
+  }, [
+    currentModelCapabilities,
+    imageInputProfile,
+    onLibraryAvailability,
+    selectedModel,
+    selectedVariant,
+    uploadedEndImageUrl,
+    uploadedImageUrls,
+    uploadedVideoUrls.length,
+  ]);
   const supplementalInputs = useMemo(
     () => {
       const inputs = getSupplementalModelInputs(selectedVariant?.model);
@@ -2268,6 +2310,7 @@ export default function VideoStudio({
             ...(workflowMedia.videoUrls || []),
             ...(workflowMedia.audioUrls || []),
           ],
+          creditsCharged: res.costCredits ?? res.cost ?? null,
           costCredits: res.costCredits ?? res.cost ?? null,
           aspectRatio: selectedAr,
           resolution: selectedResolution || selectedQuality || null,
@@ -2354,6 +2397,7 @@ export default function VideoStudio({
             ...(workflowMedia.videoUrls || []),
             ...(workflowMedia.audioUrls || []),
           ],
+          creditsCharged: res.costCredits ?? res.cost ?? null,
           costCredits: res.costCredits ?? res.cost ?? null,
           aspectRatio: selectedAr,
           resolution: selectedResolution || selectedQuality || null,
@@ -2445,6 +2489,7 @@ export default function VideoStudio({
             ...(workflowMedia.videoUrls || []),
             ...(workflowMedia.audioUrls || []),
           ],
+          creditsCharged: res.costCredits ?? res.cost ?? null,
           costCredits: res.costCredits ?? res.cost ?? null,
           aspectRatio: selectedAr,
           resolution: selectedResolution || selectedQuality || null,
@@ -2510,6 +2555,7 @@ export default function VideoStudio({
     if (!assetAction || handledAssetActionRef.current === assetAction.id) return;
     handledAssetActionRef.current = assetAction.id;
     const { asset, action } = assetAction;
+    const url = assetAction.url || asset.url;
     let targetVariant = videoModelCatalog.variantById.get(asset.model);
     let targetFamily = videoModelCatalog.familyByVariantId.get(asset.model);
     let mode = asset.settings?.v2vMode
@@ -2517,6 +2563,16 @@ export default function VideoStudio({
       : asset.settings?.imageMode
         ? "i2v"
         : "t2v";
+
+    if (action === "start_frame" || action === "end_frame") {
+      targetVariant = videoModelCatalog.variantById.get(selectedModel);
+      targetFamily = videoModelCatalog.familyByVariantId.get(selectedModel);
+      mode = targetVariant?.mode || mode;
+      if (getModelMediaCapabilities(targetVariant?.model).image.maxItems === 0) {
+        toast.error(copy.errors.imageFrameUnsupported);
+        return;
+      }
+    }
 
     if (action === "reference") {
       targetVariant = Array.from(videoModelCatalog.variantById.values()).find(
@@ -2540,11 +2596,15 @@ export default function VideoStudio({
       targetFamily,
       action === "reference" ? null : asset.settings?.workflowId || null,
     );
-    setPrompt(asset.prompt || "");
-    setSelectedAr(asset.aspectRatio || asset.settings?.aspect_ratio || "16:9");
-    setSelectedDuration(asset.settings?.duration || selectedDuration);
-    setSelectedResolution(asset.resolution || asset.settings?.resolution || "");
-    setSelectedQuality(asset.settings?.quality || "");
+    if (asset.prompt != null) setPrompt(asset.prompt || "");
+    if (asset.aspectRatio || asset.settings?.aspect_ratio) {
+      setSelectedAr(asset.aspectRatio || asset.settings.aspect_ratio);
+    }
+    if (asset.settings?.duration) setSelectedDuration(asset.settings.duration);
+    if (asset.resolution || asset.settings?.resolution) {
+      setSelectedResolution(asset.resolution || asset.settings.resolution);
+    }
+    if (asset.settings?.quality) setSelectedQuality(asset.settings.quality);
     if (asset.settings?.modelParameterValues) {
       setModelParameterValues((values) => ({
         ...values,
@@ -2554,16 +2614,20 @@ export default function VideoStudio({
 
     const media = action === "reference"
       ? (asset.kind === "image"
-        ? { imageUrls: [asset.url], endImageUrl: null, videoUrls: [], audioUrls: [] }
-        : { imageUrls: [], endImageUrl: null, videoUrls: [asset.url], audioUrls: [] })
-      : asset.settings?.referenceMedia || {};
+        ? { imageUrls: [url], endImageUrl: null, videoUrls: [], audioUrls: [] }
+        : { imageUrls: [], endImageUrl: null, videoUrls: [url], audioUrls: [] })
+      : action === "start_frame"
+        ? { imageUrls: [url], endImageUrl: null, videoUrls: [], audioUrls: [] }
+        : action === "end_frame"
+          ? { imageUrls: uploadedImageUrls, endImageUrl: url, videoUrls: [], audioUrls: [] }
+          : asset.settings?.referenceMedia || {};
     setUploadedImageUrls(media.imageUrls || []);
     setUploadedEndImageUrl(media.endImageUrl || null);
     setUploadedVideoUrls(media.videoUrls || []);
     setUploadedAudioUrls(media.audioUrls || []);
     setSelectedWorkflowId(action === "reference" ? null : asset.settings?.workflowId || null);
     if (action === "recreate") setPendingAssetGenerateId(assetAction.id);
-  }, [assetAction, applyUserSelectedVariant, selectedDuration]);
+  }, [assetAction, applyUserSelectedVariant, selectedModel, selectedDuration, uploadedImageUrls]);
 
   useEffect(() => {
     if (!pendingAssetGenerateId) return;

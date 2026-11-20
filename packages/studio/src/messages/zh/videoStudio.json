@@ -78,6 +78,7 @@
     "modelChangedDuringUpload": "上传过程中模型已更改，请重新添加文件。",
     "modelDoesNotSupportReference": "{family} 不支持{mediaType}参考素材。",
     "sourceDoesNotAcceptImages": "所选来源不接受图片。",
+    "imageFrameUnsupported": "所选视频模型不接受图像帧。",
     "waitForCurrentUpload": "请等待当前上传完成后再重新添加这些文件。",
     "imageExceeds10MB": "图片超过 10MB 限制。",
     "labelExceedsLimit": "{label}超过 {limit}MB 限制。",
