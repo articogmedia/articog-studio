@@ -284,19 +284,6 @@ const NAVIGATION_CATEGORIES = [
       </svg>
     )
   },
-  {
-    id: 'gallery',
-    label: 'Gallery',
-    tabIds: ['gallery'],
-    icon: (
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="8" height="8" rx="1"/>
-        <rect x="13" y="3" width="8" height="5" rx="1"/>
-        <rect x="13" y="10" width="8" height="11" rx="1"/>
-        <rect x="3" y="13" width="8" height="8" rx="1"/>
-      </svg>
-    )
-  }
 ];
 
 const EXPLORE_APPS_TAB = TABS.find((tab) => tab.id === 'apps');
@@ -449,6 +436,7 @@ export default function StandaloneShell({ locale = 'en' }) {
     getNavigationCategory(getInitialTab())?.id || NAVIGATION_CATEGORIES[0].id
   ));
   const activeCategory = getNavigationCategory(activeTab);
+  const isLibraryTab = activeTab === 'library' || activeTab === 'gallery';
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarCollapsed(prev => {
@@ -929,7 +917,7 @@ export default function StandaloneShell({ locale = 'en' }) {
           <div className={`hidden lg:flex min-w-0 max-w-64 items-center gap-2 justify-self-center ${HEADER_CONTROL_CLASS} text-[var(--text-secondary)]`}>
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]" />
             <span className="truncate font-medium text-[var(--text-primary)]">
-              {activeTab === 'library' ? 'Library' : tabLabel(activeTab) || copy.shell.studioFallback}
+              {isLibraryTab ? 'Library' : tabLabel(activeTab) || copy.shell.studioFallback}
             </span>
           </div>
 
@@ -1172,22 +1160,22 @@ export default function StandaloneShell({ locale = 'en' }) {
                 <a
                   href={studioPath('library')}
                   onClick={(event) => handleNavigationItemClick(event, 'library')}
-                  aria-current={activeTab === 'library' ? 'page' : undefined}
+                  aria-current={isLibraryTab ? 'page' : undefined}
                   aria-label="Library"
                   title={isSidebarCollapsed && !isMobileOpen ? 'Library' : undefined}
                   className={`
                     group relative flex h-10 items-center rounded-control transition-all duration-150 text-sm font-semibold
                     ${isSidebarCollapsed && !isMobileOpen ? 'h-10 w-10 justify-center mx-auto' : 'h-10 px-3 w-full gap-3'}
-                    ${activeTab === 'library'
+                    ${isLibraryTab
                       ? 'bg-white/[0.05] text-white border border-white/[0.08]'
                       : 'text-white/55 hover:text-white hover:bg-white/[0.05] border border-transparent'
                     }
                   `}
                 >
-                  {activeTab === 'library' && (
+                  {isLibraryTab && (
                     <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-[var(--accent)] rounded-r-full" />
                   )}
-                  <span className={`flex-shrink-0 [&_svg]:h-5 [&_svg]:w-5 ${activeTab === 'library' ? 'text-white' : 'text-[var(--text-secondary)] group-hover:text-white'}`}>
+                  <span className={`flex-shrink-0 [&_svg]:h-5 [&_svg]:w-5 ${isLibraryTab ? 'text-white' : 'text-[var(--text-secondary)] group-hover:text-white'}`}>
                     {TABS.find((tab) => tab.id === 'library')?.icon}
                   </span>
                   {(!isSidebarCollapsed || isMobileOpen) && (
@@ -1231,17 +1219,51 @@ export default function StandaloneShell({ locale = 'en' }) {
           <CinemaStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'cinema' ? libraryAction : null} historyPrefill={historyPrefill} onHistoryRecord={makeHistoryRecordCallback('cinema')} onGenerationStart={makeGenerationStartCallback('cinema')} onGenerationEnd={makeGenerationEndCallback('cinema')} onGenerationComplete={makeSuccessCallback('cinema')} onGenerationError={makeErrorCallback('cinema')} />
         </div>
         </StudioBalanceContext.Provider>
-        <div className={activeTab === 'library' ? "h-full w-full" : "hidden"}>
-          <AssetsLibrary apiKey={apiKey} locale={locale} copy={copy.assetsLibrary} referenceAvailability={libraryAvailability} onAssetAction={handleLibraryAssetAction} onProjectsChange={setLibraryProjects} />
-        </div>
-        <div className={activeTab === 'gallery' ? "h-full w-full" : "hidden"}>
-          <Gallery
-            onRerun={applyStudioPrefill}
-            selectedProjectId={selectedHistoryProjectId}
-            onSelectedProjectChange={setSelectedHistoryProjectId}
-            projects={historyProjects}
-            onCreateProject={handleCreateHistoryProject}
-          />
+        <div className={isLibraryTab ? "flex h-full w-full flex-col" : "hidden"}>
+          <div className="mx-auto flex w-full max-w-[1400px] shrink-0 items-center gap-2 pb-4">
+            <div role="tablist" aria-label="Library views" className="flex items-center gap-2">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'library'}
+                aria-controls="library-device-panel"
+                onClick={() => handleTabChange('library')}
+                className={`${HEADER_CONTROL_CLASS} transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+                  activeTab === 'library'
+                    ? 'border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)]'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-raised)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                This device
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'gallery'}
+                aria-controls="library-cloud-panel"
+                onClick={() => handleTabChange('gallery')}
+                className={`${HEADER_CONTROL_CLASS} transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+                  activeTab === 'gallery'
+                    ? 'border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)]'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-raised)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                Cloud history
+              </button>
+            </div>
+          </div>
+          <div id="library-device-panel" role="tabpanel" className={activeTab === 'library' ? "min-h-0 flex-1" : "hidden"}>
+            <AssetsLibrary apiKey={apiKey} locale={locale} copy={copy.assetsLibrary} referenceAvailability={libraryAvailability} onAssetAction={handleLibraryAssetAction} onProjectsChange={setLibraryProjects} />
+          </div>
+          <div id="library-cloud-panel" role="tabpanel" className={activeTab === 'gallery' ? "min-h-0 flex-1" : "hidden"}>
+            <Gallery
+              onRerun={applyStudioPrefill}
+              selectedProjectId={selectedHistoryProjectId}
+              onSelectedProjectChange={setSelectedHistoryProjectId}
+              projects={historyProjects}
+              onCreateProject={handleCreateHistoryProject}
+            />
+          </div>
         </div>
         <div className={activeTab === 'audio' ? "h-full w-full" : "hidden"}>
           <AudioStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('audio')} onGenerationEnd={makeGenerationEndCallback('audio')} onGenerationComplete={makeSuccessCallback('audio')} onGenerationError={makeErrorCallback('audio')} />
