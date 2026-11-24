@@ -550,6 +550,8 @@ export default function MotionControlStudio({
   onGenerationStart,
   onGenerationEnd,
   onGenerationComplete,
+  onHistoryRecord,
+  historyPrefill,
   onGenerationError,
   droppedFiles,
   onFilesHandled,
@@ -582,6 +584,18 @@ export default function MotionControlStudio({
   const [highBitrate, setHighBitrate] = useState(false); // for seedance-2.5
   const [generateAudio, setGenerateAudio] = useState(false);
   const [seed, setSeed] = useState(-1);
+
+  useEffect(() => {
+    if (!historyPrefill || historyPrefill.input?.studio !== "motion-control") return;
+    if (typeof historyPrefill.prompt === "string") setPrompt(historyPrefill.prompt);
+    if (typeof historyPrefill.model === "string") setSelectedModelId(historyPrefill.model);
+    const input = historyPrefill.input || {};
+    if (typeof input.video_url === "string") setVideoUrl(input.video_url);
+    if (Array.isArray(input.images_list)) setCharacterImages(input.images_list.map((url) => ({ url, name: "Saved reference" })));
+    if (typeof input.aspect_ratio === "string") setAspectRatio(input.aspect_ratio);
+    if (input.duration !== undefined) setDuration(input.duration);
+    if (typeof input.mode === "string") setMode(input.mode);
+  }, [historyPrefill]);
 
   // Sync parameters when switching model
   useEffect(() => {
@@ -855,6 +869,24 @@ export default function MotionControlStudio({
 
       saveHistory([newEntry, ...history]);
       handleAddResultAsset(outputUrl, `motion-${newEntry.id}.mp4`);
+      onHistoryRecord?.({
+        model: selectedModelId,
+        type: "video",
+        prompt: prompt.trim(),
+        input: {
+          studio: "motion-control",
+          mode,
+          video_url: videoUrl,
+          images_list: characterImages.map((image) => image.url),
+          aspect_ratio: aspectRatio,
+          duration,
+          quality,
+          high_bitrate: highBitrate,
+          generate_audio: generateAudio,
+          seed,
+        },
+        outputs: [outputUrl],
+      });
       onGenerationComplete?.(newEntry);
       toast.success("Motion control video generated successfully!");
     } catch (err) {

@@ -539,6 +539,8 @@ export default function CinemaStudio({
   onGenerationStart,
   onGenerationEnd,
   onGenerationComplete,
+  onHistoryRecord,
+  historyPrefill,
   onGenerationError,
   historyItems,
   locale = "en",
@@ -562,6 +564,22 @@ export default function CinemaStudio({
     aperture: "f/1.4",
   });
   const [resolution, setResolution] = useState("2K");
+
+  useEffect(() => {
+    if (!historyPrefill || historyPrefill.input?.studio !== "cinema") return;
+    const input = historyPrefill.input || {};
+    setSettings((current) => ({
+      ...current,
+      ...(typeof historyPrefill.prompt === "string" ? { prompt: historyPrefill.prompt } : {}),
+      ...(typeof input.aspect_ratio === "string" ? { aspect_ratio: input.aspect_ratio } : {}),
+      ...(typeof input.camera === "string" ? { camera: input.camera } : {}),
+      ...(typeof input.lens === "string" ? { lens: input.lens } : {}),
+      ...(input.focal !== undefined ? { focal: input.focal } : {}),
+      ...(typeof input.aperture === "string" ? { aperture: input.aperture } : {}),
+    }));
+    if (input.resolution) setResolution(input.resolution);
+    if (typeof input.image_url === "string") setUploadedImage(input.image_url);
+  }, [historyPrefill]);
 
   // ── UI state ──
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
@@ -783,6 +801,18 @@ export default function CinemaStudio({
           projectId: selectedProjectId,
         }).catch((error) => console.error("[CinemaStudio] Could not save asset:", error));
 
+        onHistoryRecord?.({
+          model,
+          type: "image",
+          prompt: basePrompt,
+          input: {
+            studio: "cinema",
+            ...settings,
+            resolution,
+            image_url: uploadedImage,
+          },
+          outputs: [res.url],
+        });
         if (onGenerationComplete) {
           onGenerationComplete({
             url: res.url,
@@ -807,6 +837,7 @@ export default function CinemaStudio({
     apiKey,
     isGenerating,
     onGenerationComplete,
+    onHistoryRecord,
     onGenerationEnd,
     onGenerationError,
     onGenerationStart,

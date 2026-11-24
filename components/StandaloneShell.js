@@ -7,6 +7,9 @@ import { ImageStudio, VideoStudio, ClippingStudio, MotionControlStudio, VibeMoti
 import { createProject, listProjects } from '../packages/studio/src/library/libraryStore';
 import { StudioBalanceContext } from '../packages/studio/src/utils/StudioBalanceContext.js';
 import { UI } from '../packages/studio/src/styles/ui.js';
+import Gallery from './gallery/Gallery';
+import TemplatePicker from './templates/TemplatePicker';
+import { recordGeneration } from '@/lib/history/record';
 
 const DesignAgentStudio = dynamic(() => import('studio').then(mod => mod.DesignAgentStudio), {
   ssr: false,
@@ -215,6 +218,18 @@ const TABS = [
         <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10l2 2h6.5A1.5 1.5 0 0 1 20 7.5v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z" />
       </svg>
     )
+  },
+  {
+    id: 'gallery',
+    label: 'Gallery',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="8" height="8" rx="1"/>
+        <rect x="13" y="3" width="8" height="5" rx="1"/>
+        <rect x="13" y="10" width="8" height="11" rx="1"/>
+        <rect x="3" y="13" width="8" height="8" rx="1"/>
+      </svg>
+    )
   }
 ];
 
@@ -266,6 +281,19 @@ const NAVIGATION_CATEGORIES = [
         <rect x="9" y="15" width="6" height="6" rx="1"/>
         <path d="M6 9v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9"/>
         <path d="M12 13v2"/>
+      </svg>
+    )
+  },
+  {
+    id: 'gallery',
+    label: 'Gallery',
+    tabIds: ['gallery'],
+    icon: (
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="8" height="8" rx="1"/>
+        <rect x="13" y="3" width="8" height="5" rx="1"/>
+        <rect x="13" y="10" width="8" height="11" rx="1"/>
+        <rect x="3" y="13" width="8" height="8" rx="1"/>
       </svg>
     )
   }
@@ -354,8 +382,12 @@ export default function StandaloneShell({ locale = 'en' }) {
   
   const [apiKey, setApiKey] = useState(null);
   const [activeTab, setActiveTab] = useState(getInitialTab());
+  const [historyPrefill, setHistoryPrefill] = useState(null);
+  const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
   const [libraryProjects, setLibraryProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('default');
+  const [historyProjects, setHistoryProjects] = useState([]);
+  const [selectedHistoryProjectId, setSelectedHistoryProjectId] = useState('');
   const [libraryAction, setLibraryAction] = useState(null);
   const [libraryAvailability, setLibraryAvailability] = useState({});
   const updateLibraryAvailability = useCallback((key, availability) => {
@@ -382,6 +414,15 @@ export default function StandaloneShell({ locale = 'en' }) {
     listProjects()
       .then(setLibraryProjects)
       .catch((error) => console.error('[StandaloneShell] Could not load library projects:', error));
+    fetch('/api/projects', { credentials: 'same-origin' })
+      .then(async (response) => {
+        if (response.status === 401) return [];
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Could not load projects.');
+        return data.projects || [];
+      })
+      .then(setHistoryProjects)
+      .catch((error) => console.error('[StandaloneShell] Could not load history projects:', error));
   }, []);
 
   const handleCreateProject = async () => {
@@ -507,6 +548,74 @@ export default function StandaloneShell({ locale = 'en' }) {
       resultUrl: data?.url || null,
     });
   }, [pushNotification]);
+
+  const makeHistoryRecordCallback = useCallback((tabId) => (data) => {
+    void recordGeneration({ ...data, projectId: selectedHistoryProjectId || null })
+      .catch((error) => {
+        if (error.status === 401) return;
+        console.error(`[StandaloneShell] Could not save ${tabId} history:`, error);
+        pushNotification({
+          type: 'error',
+          tabId,
+          label: 'History',
+          message: `Generation completed, but history was not saved: ${error.message}`,
+        });
+      });
+  }, [pushNotification, selectedHistoryProjectId]);
+
+  const applyStudioPrefill = useCallback((data) => {
+    const type = data?.type === 'video' ? 'video' : 'image';
+    const studio = data?.input?.studio;
+    const supportedTabs = new Set([
+      'image', 'layers', 'video', 'clipping', 'motion-control', 'vibe-motion',
+      'lipsync', 'body-swap', 'cinema', 'marketing', 'ai-influencer',
+    ]);
+    setHistoryPrefill({
+      type,
+      model: data.model,
+      prompt: data.prompt || '',
+      input: {
+        ...(data.input && typeof data.input === 'object' ? data.input : {}),
+        studio: supportedTabs.has(studio) ? studio : type,
+      },
+    });
+    setActiveTab(supportedTabs.has(studio) ? studio : type);
+  }, []);
+
+  const handleCreateHistoryProject = async () => {
+    const name = window.prompt('Project name');
+    if (!name?.trim()) return;
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ name }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        router.push('/login');
+        return;
+      }
+      if (!response.ok) throw new Error(data.error || 'Could not create project.');
+      setHistoryProjects((projects) => [data, ...projects]);
+      setSelectedHistoryProjectId(data.id);
+    } catch (error) {
+      console.error('[StandaloneShell] Could not create history project:', error);
+      window.alert(error.message || 'Could not create project.');
+    }
+  };
+
+  const handleTemplateApply = useCallback((template) => {
+    applyStudioPrefill({
+      ...template,
+      input: {
+        studio: template.type,
+        aspect_ratio: template.aspect_ratio,
+        duration: template.duration,
+      },
+    });
+  }, [applyStudioPrefill]);
 
   const makeErrorCallback = useCallback((tabId) => (errorOrMessage) => {
     const tab = TABS.find(t => t.id === tabId);
@@ -825,6 +934,10 @@ export default function StandaloneShell({ locale = 'en' }) {
 
           {/* Right: Actions */}
           <div className="flex-shrink-0 flex items-center gap-1 sm:gap-3">
+            <button type="button" onClick={() => setIsTemplatePickerOpen(true)} className={`${UI.buttonSecondary} max-sm:px-1.5 px-2.5`}>
+              <span className="sm:hidden">Templates</span>
+              <span className="hidden sm:inline">Templates</span>
+            </button>
             <div className="flex items-center gap-1 sm:gap-2">
               <select
                 aria-label="Generation project"
@@ -845,6 +958,23 @@ export default function StandaloneShell({ locale = 'en' }) {
               >
                 <span className="sm:hidden">New</span>
                 <span className="hidden sm:inline">New project</span>
+              </button>
+            </div>
+            <div className="flex items-center gap-1">
+              <select
+                aria-label="Gallery project"
+                value={selectedHistoryProjectId}
+                onChange={(event) => setSelectedHistoryProjectId(event.target.value)}
+                className={`max-sm:w-20 max-sm:min-w-0 max-w-28 sm:max-w-36 ${UI.select} px-2 sm:px-2.5`}
+              >
+                <option value="">All history</option>
+                {historyProjects.map((project) => (
+                  <option key={project.id} value={project.id} className="bg-[#111]">{project.name}</option>
+                ))}
+              </select>
+              <button type="button" onClick={handleCreateHistoryProject} className={`${UI.buttonSecondary} max-sm:px-1.5 px-2.5`}>
+                <span className="sm:hidden">New</span>
+                <span className="hidden sm:inline">New history project</span>
               </button>
             </div>
             <div className="flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 py-1.5 transition-colors sm:gap-2.5 sm:px-3">
@@ -1056,41 +1186,44 @@ export default function StandaloneShell({ locale = 'en' }) {
         <div className="flex-1 min-h-0 h-full relative overflow-hidden bg-[var(--bg-base)] p-6">
         <StudioBalanceContext.Provider value={balance}>
         <div className={activeTab === 'image' ? "h-full w-full" : "hidden"}>
-          <ImageStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'image' ? libraryAction : null} onLibraryAvailability={handleImageLibraryAvailability} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
+          <ImageStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'image' ? libraryAction : null} onLibraryAvailability={handleImageLibraryAvailability} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} historyPrefill={historyPrefill} onHistoryRecord={makeHistoryRecordCallback('image')} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
         </div>
         <div className={activeTab === 'layers' ? "h-full w-full" : "hidden"}>
-          <LayersStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('layers')} onGenerationEnd={makeGenerationEndCallback('layers')} onGenerationComplete={makeSuccessCallback('layers')} onGenerationError={makeErrorCallback('layers')} />
+          <LayersStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} historyPrefill={historyPrefill} onHistoryRecord={makeHistoryRecordCallback('layers')} onGenerationStart={makeGenerationStartCallback('layers')} onGenerationEnd={makeGenerationEndCallback('layers')} onGenerationComplete={makeSuccessCallback('layers')} onGenerationError={makeErrorCallback('layers')} />
         </div>
         <div className={activeTab === 'video' ? "h-full w-full" : "hidden"}>
-          <VideoStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'video' ? libraryAction : null} onLibraryAvailability={handleVideoLibraryAvailability} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('video')} onGenerationEnd={makeGenerationEndCallback('video')} onGenerationComplete={makeSuccessCallback('video')} onGenerationError={makeErrorCallback('video')} />
+          <VideoStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'video' ? libraryAction : null} onLibraryAvailability={handleVideoLibraryAvailability} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} historyPrefill={historyPrefill} onHistoryRecord={makeHistoryRecordCallback('video')} onGenerationStart={makeGenerationStartCallback('video')} onGenerationEnd={makeGenerationEndCallback('video')} onGenerationComplete={makeSuccessCallback('video')} onGenerationError={makeErrorCallback('video')} />
         </div>
         <div className={activeTab === 'clipping' ? "h-full w-full" : "hidden"}>
-          <ClippingStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('clipping')} onGenerationEnd={makeGenerationEndCallback('clipping')} onGenerationComplete={makeSuccessCallback('clipping')} onGenerationError={makeErrorCallback('clipping')} />
+          <ClippingStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} historyPrefill={historyPrefill} onHistoryRecord={makeHistoryRecordCallback('clipping')} onGenerationStart={makeGenerationStartCallback('clipping')} onGenerationEnd={makeGenerationEndCallback('clipping')} onGenerationComplete={makeSuccessCallback('clipping')} onGenerationError={makeErrorCallback('clipping')} />
         </div>
         <div className={activeTab === 'motion-control' ? "h-full w-full" : "hidden"}>
-          <MotionControlStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('motion-control')} onGenerationEnd={makeGenerationEndCallback('motion-control')} onGenerationComplete={makeSuccessCallback('motion-control')} onGenerationError={makeErrorCallback('motion-control')} />
+          <MotionControlStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} historyPrefill={historyPrefill} onHistoryRecord={makeHistoryRecordCallback('motion-control')} onGenerationStart={makeGenerationStartCallback('motion-control')} onGenerationEnd={makeGenerationEndCallback('motion-control')} onGenerationComplete={makeSuccessCallback('motion-control')} onGenerationError={makeErrorCallback('motion-control')} />
         </div>
         <div className={activeTab === 'vibe-motion' ? "h-full w-full" : "hidden"}>
-          <VibeMotionStudio apiKey={apiKey} locale={locale} onGenerationStart={makeGenerationStartCallback('vibe-motion')} onGenerationEnd={makeGenerationEndCallback('vibe-motion')} onGenerationComplete={makeSuccessCallback('vibe-motion')} onGenerationError={makeErrorCallback('vibe-motion')} />
+          <VibeMotionStudio apiKey={apiKey} locale={locale} historyPrefill={historyPrefill} onHistoryRecord={makeHistoryRecordCallback('vibe-motion')} onGenerationStart={makeGenerationStartCallback('vibe-motion')} onGenerationEnd={makeGenerationEndCallback('vibe-motion')} onGenerationComplete={makeSuccessCallback('vibe-motion')} onGenerationError={makeErrorCallback('vibe-motion')} />
         </div>
         <div className={activeTab === 'lipsync' ? "h-full w-full" : "hidden"}>
-          <LipSyncStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('lipsync')} onGenerationEnd={makeGenerationEndCallback('lipsync')} onGenerationComplete={makeSuccessCallback('lipsync')} onGenerationError={makeErrorCallback('lipsync')} />
+          <LipSyncStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} historyPrefill={historyPrefill} onHistoryRecord={makeHistoryRecordCallback('lipsync')} onGenerationStart={makeGenerationStartCallback('lipsync')} onGenerationEnd={makeGenerationEndCallback('lipsync')} onGenerationComplete={makeSuccessCallback('lipsync')} onGenerationError={makeErrorCallback('lipsync')} />
         </div>
         <div className={activeTab === 'body-swap' ? "h-full w-full" : "hidden"}>
-          <RecastStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('body-swap')} onGenerationEnd={makeGenerationEndCallback('body-swap')} onGenerationComplete={makeSuccessCallback('body-swap')} onGenerationError={makeErrorCallback('body-swap')} />
+          <RecastStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} historyPrefill={historyPrefill} onHistoryRecord={makeHistoryRecordCallback('body-swap')} onGenerationStart={makeGenerationStartCallback('body-swap')} onGenerationEnd={makeGenerationEndCallback('body-swap')} onGenerationComplete={makeSuccessCallback('body-swap')} onGenerationError={makeErrorCallback('body-swap')} />
         </div>
         <div className={activeTab === 'cinema' ? "h-full w-full" : "hidden"}>
-          <CinemaStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'cinema' ? libraryAction : null} onGenerationStart={makeGenerationStartCallback('cinema')} onGenerationEnd={makeGenerationEndCallback('cinema')} onGenerationComplete={makeSuccessCallback('cinema')} onGenerationError={makeErrorCallback('cinema')} />
+          <CinemaStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'cinema' ? libraryAction : null} historyPrefill={historyPrefill} onHistoryRecord={makeHistoryRecordCallback('cinema')} onGenerationStart={makeGenerationStartCallback('cinema')} onGenerationEnd={makeGenerationEndCallback('cinema')} onGenerationComplete={makeSuccessCallback('cinema')} onGenerationError={makeErrorCallback('cinema')} />
         </div>
         </StudioBalanceContext.Provider>
         <div className={activeTab === 'library' ? "h-full w-full" : "hidden"}>
           <AssetsLibrary apiKey={apiKey} locale={locale} copy={copy.assetsLibrary} referenceAvailability={libraryAvailability} onAssetAction={handleLibraryAssetAction} onProjectsChange={setLibraryProjects} />
         </div>
+        <div className={activeTab === 'gallery' ? "h-full w-full" : "hidden"}>
+          <Gallery onRerun={applyStudioPrefill} selectedProjectId={selectedHistoryProjectId} />
+        </div>
         <div className={activeTab === 'audio' ? "h-full w-full" : "hidden"}>
           <AudioStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('audio')} onGenerationEnd={makeGenerationEndCallback('audio')} onGenerationComplete={makeSuccessCallback('audio')} onGenerationError={makeErrorCallback('audio')} />
         </div>
         <div className={activeTab === 'marketing' ? "h-full w-full" : "hidden"}>
-          <MarketingStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('marketing')} onGenerationEnd={makeGenerationEndCallback('marketing')} onGenerationComplete={makeSuccessCallback('marketing')} onGenerationError={makeErrorCallback('marketing')} />
+          <MarketingStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} historyPrefill={historyPrefill} onHistoryRecord={makeHistoryRecordCallback('marketing')} onGenerationStart={makeGenerationStartCallback('marketing')} onGenerationEnd={makeGenerationEndCallback('marketing')} onGenerationComplete={makeSuccessCallback('marketing')} onGenerationError={makeErrorCallback('marketing')} />
         </div>
         <div className={activeTab === 'workflows' ? "h-full w-full" : "hidden"}>
           <WorkflowStudio
@@ -1126,12 +1259,19 @@ export default function StandaloneShell({ locale = 'en' }) {
           <AiInfluencerStudio
             apiKey={apiKey}
             locale={locale}
+            historyPrefill={historyPrefill}
+            onHistoryRecord={makeHistoryRecordCallback('ai-influencer')}
             onGenerationStart={makeGenerationStartCallback('ai-influencer')}
             onGenerationEnd={makeGenerationEndCallback('ai-influencer')}
             onGenerationComplete={makeSuccessCallback('ai-influencer')}
             onGenerationError={makeErrorCallback('ai-influencer')}
           />
         </div>
+        <TemplatePicker
+          open={isTemplatePickerOpen}
+          onClose={() => setIsTemplatePickerOpen(false)}
+          onApply={handleTemplateApply}
+        />
       </div>
     </div>
 

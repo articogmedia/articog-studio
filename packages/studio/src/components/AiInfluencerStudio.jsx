@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { generateImage } from "../muapi.js";
 import { formatErrorMessage } from "../utils/formatError.js";
@@ -344,6 +344,8 @@ export default function AiInfluencerStudio({
   onGenerationStart,
   onGenerationEnd,
   onGenerationComplete,
+  onHistoryRecord,
+  historyPrefill,
   onGenerationError,
   isGenerating: externalIsGenerating,
   locale = "en",
@@ -370,6 +372,15 @@ export default function AiInfluencerStudio({
   const [errorMsg, setErrorMsg] = useState("");
 
   const isGenerating = externalIsGenerating || isGeneratingInternal;
+
+  useEffect(() => {
+    if (!historyPrefill || historyPrefill.input?.studio !== "ai-influencer") return;
+    const input = historyPrefill.input || {};
+    if (typeof input.customPrompt === "string") setCustomPrompt(input.customPrompt);
+    else if (typeof historyPrefill.prompt === "string") setCustomPrompt(historyPrefill.prompt);
+    if (typeof input.aspect_ratio === "string") setAspectRatio(input.aspect_ratio);
+    if (input.selections && typeof input.selections === "object") setSelectedOptions(input.selections);
+  }, [historyPrefill]);
 
   // ── Build prompt from selections ──────────────────────────────────────────
   const buildPrompt = useCallback(() => {
@@ -425,6 +436,18 @@ export default function AiInfluencerStudio({
         setCurrentResult(res.url);
         setHistory((prev) => [{ url: res.url, prompt, ts: Date.now() }, ...prev]);
         setSelectedHistoryIdx(0);
+        onHistoryRecord?.({
+          model: INFLUENCER_MODEL,
+          type: "image",
+          prompt,
+          input: {
+            studio: "ai-influencer",
+            aspect_ratio: aspectRatio,
+            selections: selectedOptions,
+            customPrompt,
+          },
+          outputs: [res.url],
+        });
         onGenerationComplete?.({
           url: res.url,
           model: INFLUENCER_MODEL,

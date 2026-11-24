@@ -991,6 +991,8 @@ export default function ImageStudio({
   onGenerationStart,
   onGenerationEnd,
   onGenerationComplete,
+  onHistoryRecord,
+  historyPrefill,
   onGenerationError,
   historyItems,
   onDeleteHistoryItem,
@@ -1034,6 +1036,30 @@ export default function ImageStudio({
   const [imageUploadMessage, setImageUploadMessage] = useState("");
   const [swapImageUrl, setSwapImageUrl] = useState(null);
   const [uploadHistory, setUploadHistory] = useState([]); // persisted reference images history
+
+  useEffect(() => {
+    if (!historyPrefill || historyPrefill.input?.studio !== "image") return;
+    if (typeof historyPrefill.prompt === "string") setPrompt(historyPrefill.prompt);
+    const modelId = historyPrefill.model;
+    const family = imageModelCatalog.familyByVariantId.get(modelId);
+    if (family) {
+      setSelectedModelId(modelId);
+      setSelectedFamilyId(family.id);
+    }
+    const input = historyPrefill.input || {};
+    if (typeof input.aspect_ratio === "string") setSelectedAr(input.aspect_ratio);
+    if (input.resolution) setSelectedQuality(input.resolution);
+    if (input.modelParameterValues && typeof input.modelParameterValues === "object") {
+      setModelParameterValues(input.modelParameterValues);
+    }
+    if (typeof input.imageMode === "boolean") setImageMode(input.imageMode);
+    const inputUrls = Array.isArray(input.images_list)
+      ? input.images_list
+      : input.image_url
+        ? [input.image_url]
+        : [];
+    if (inputUrls.length) setUploadedImageUrls(inputUrls);
+  }, [historyPrefill]);
 
   // ── UI state ────────────────────────────────────────────────────────────
   const [dropdownOpen, setDropdownOpen] = useState(null); // 'model' | 'ar' | 'quality' | null
@@ -1579,6 +1605,21 @@ export default function ImageStudio({
             format: res.format || null,
             projectId: selectedProjectId,
           }).catch((error) => console.error("[ImageStudio] Could not save asset:", error));
+          onHistoryRecord?.({
+            model: selectedModelId,
+            type: "image",
+            prompt: prompt.trim(),
+            input: {
+              studio: "image",
+              aspect_ratio: selectedAr,
+              resolution: selectedQuality,
+              modelParameterValues,
+              imageMode,
+              image_url: swapImageUrl || uploadedImageUrls[0] || null,
+              images_list: uploadedImageUrls,
+            },
+            outputs: [res.url],
+          });
           onGenerationComplete?.({
             url: res.url,
             model: selectedModelId,

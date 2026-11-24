@@ -792,6 +792,8 @@ export default function VideoStudio({
   onGenerationStart,
   onGenerationEnd,
   onGenerationComplete,
+  onHistoryRecord,
+  historyPrefill,
   onGenerationError,
   historyItems,
   onDeleteHistoryItem,
@@ -902,6 +904,31 @@ export default function VideoStudio({
 
   // ── prompt ──
   const [prompt, setPrompt] = useState("");
+
+  useEffect(() => {
+    if (!historyPrefill || historyPrefill.input?.studio !== "video") return;
+    if (typeof historyPrefill.prompt === "string") setPrompt(historyPrefill.prompt);
+    const modelId = historyPrefill.model;
+    const family = videoModelCatalog.familyByVariantId.get(modelId);
+    if (family) {
+      setSelectedModel(modelId);
+      setSelectedFamilyId(family.id);
+    }
+    const input = historyPrefill.input || {};
+    if (typeof input.aspect_ratio === "string") setSelectedAr(input.aspect_ratio);
+    if (input.duration !== undefined && input.duration !== null) setSelectedDuration(input.duration);
+    if (input.resolution) setSelectedResolution(input.resolution);
+    if (input.quality) setSelectedQuality(input.quality);
+    if (input.modelParameterValues && typeof input.modelParameterValues === "object") {
+      setModelParameterValues(input.modelParameterValues);
+    }
+    if (typeof input.imageMode === "boolean") setImageMode(input.imageMode);
+    if (typeof input.v2vMode === "boolean") setV2vMode(input.v2vMode);
+    if (Array.isArray(input.images_list) && input.images_list.length) setUploadedImageUrls(input.images_list);
+    if (Array.isArray(input.video_urls) && input.video_urls.length) setUploadedVideoUrls(input.video_urls);
+    if (Array.isArray(input.audio_urls) && input.audio_urls.length) setUploadedAudioUrls(input.audio_urls);
+    if (typeof input.end_image_url === "string") setUploadedEndImageUrl(input.end_image_url);
+  }, [historyPrefill]);
 
   // ── refs ──
   const containerRef = useRef(null);
@@ -2398,6 +2425,27 @@ export default function VideoStudio({
           projectId: selectedProjectId,
         }).catch((error) => console.error("[VideoStudio] Could not save asset:", error));
         showVideoInCanvas(res.url, selectedModel);
+        onHistoryRecord?.({
+          model: selectedModel,
+          type: "video",
+          prompt: currentModel?.hasPrompt ? trimmedPrompt : "",
+          input: {
+            studio: "video",
+            aspect_ratio: selectedAr,
+            duration: selectedDuration,
+            resolution: selectedResolution,
+            quality: selectedQuality,
+            imageMode,
+            v2vMode,
+            image_url: uploadedImageUrl,
+            video_urls: uploadedVideoUrls,
+            audio_urls: uploadedAudioUrls,
+            end_image_url: uploadedEndImageUrl,
+            reference_media: workflowMedia,
+            modelParameterValues: generationParameterValues,
+          },
+          outputs: [res.url],
+        });
         if (onGenerationComplete)
           onGenerationComplete({
             url: res.url,
@@ -2485,6 +2533,27 @@ export default function VideoStudio({
           projectId: selectedProjectId,
         }).catch((error) => console.error("[VideoStudio] Could not save asset:", error));
         showVideoInCanvas(res.url, selectedModel);
+        onHistoryRecord?.({
+          model: selectedModel,
+          type: "video",
+          prompt: trimmedPrompt,
+          input: {
+            studio: "video",
+            aspect_ratio: selectedAr,
+            duration: selectedDuration,
+            resolution: selectedResolution,
+            quality: selectedQuality,
+            imageMode,
+            v2vMode,
+            image_url: uploadedImageUrl,
+            video_urls: uploadedVideoUrls,
+            audio_urls: uploadedAudioUrls,
+            end_image_url: uploadedEndImageUrl,
+            reference_media: workflowMedia,
+            modelParameterValues: generationParameterValues,
+          },
+          outputs: [res.url],
+        });
         if (onGenerationComplete)
           onGenerationComplete({
             url: res.url,
@@ -2577,6 +2646,27 @@ export default function VideoStudio({
           projectId: selectedProjectId,
         }).catch((error) => console.error("[VideoStudio] Could not save asset:", error));
         showVideoInCanvas(res.url, selectedModel);
+        onHistoryRecord?.({
+          model: selectedModel,
+          type: "video",
+          prompt: trimmedPrompt,
+          input: {
+            studio: "video",
+            aspect_ratio: selectedAr,
+            duration: selectedDuration,
+            resolution: selectedResolution,
+            quality: selectedQuality,
+            imageMode,
+            v2vMode,
+            image_url: uploadedImageUrl,
+            video_urls: uploadedVideoUrls,
+            audio_urls: uploadedAudioUrls,
+            end_image_url: uploadedEndImageUrl,
+            reference_media: workflowMedia,
+            modelParameterValues: generationParameterValues,
+          },
+          outputs: [res.url],
+        });
         if (onGenerationComplete)
           onGenerationComplete({
             url: res.url,
@@ -2630,6 +2720,7 @@ export default function VideoStudio({
     addToLocalHistory,
     showVideoInCanvas,
     onGenerationComplete,
+    onHistoryRecord,
     onGenerationEnd,
     onGenerationError,
     onGenerationStart,

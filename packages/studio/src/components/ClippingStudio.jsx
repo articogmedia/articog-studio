@@ -213,6 +213,8 @@ export default function ClippingStudio({
   onGenerationStart,
   onGenerationEnd,
   onGenerationComplete,
+  onHistoryRecord,
+  historyPrefill,
   onGenerationError,
   droppedFiles,
   onFilesHandled,
@@ -231,6 +233,16 @@ export default function ClippingStudio({
   const [aspectRatio, setAspectRatio] = useState("9:16");
   const [returnCoordinatesOnly, setReturnCoordinatesOnly] = useState(false);
   const [prompt, setPrompt] = useState("");
+
+  useEffect(() => {
+    if (!historyPrefill || historyPrefill.input?.studio !== "clipping") return;
+    if (typeof historyPrefill.prompt === "string") setPrompt(historyPrefill.prompt);
+    const input = historyPrefill.input || {};
+    if (typeof input.video_url === "string") setVideoUrl(input.video_url);
+    if (typeof input.aspect_ratio === "string") setAspectRatio(input.aspect_ratio);
+    if (Number.isInteger(input.num_highlights)) setNumHighlights(input.num_highlights);
+    if (typeof input.return_coordinates_only === "boolean") setReturnCoordinatesOnly(input.return_coordinates_only);
+  }, [historyPrefill]);
   
   // ── Dropdowns state ──
   const [aspectDropdownOpen, setAspectDropdownOpen] = useState(false);
@@ -543,6 +555,21 @@ export default function ClippingStudio({
       // Append to history
       setHistory((prev) => [newResult, ...prev].slice(0, 30));
 
+      onHistoryRecord?.({
+        model: "ai-clipping",
+        type: "video",
+        prompt,
+        input: {
+          studio: "clipping",
+          video_url: videoUrl,
+          aspect_ratio: aspectRatio,
+          num_highlights: numHighlights,
+          return_coordinates_only: returnCoordinatesOnly,
+        },
+        outputs: (Array.isArray(clips) ? clips : [])
+          .map((clip) => typeof clip === "string" ? clip : clip?.url)
+          .filter(Boolean),
+      });
       if (onGenerationComplete) {
         onGenerationComplete({
           url: clips[0] || videoUrl,

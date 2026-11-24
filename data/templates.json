@@ -1,0 +1,98 @@
+[
+  {
+    "name": "Launch Day Hero",
+    "category": "Ads",
+    "prompt": "Create a polished launch-day campaign image for {product}, made for {audience}. Show the product as the clear hero with a confident {visual_style} art direction, generous negative space for a headline, and no readable text.",
+    "model": "nano-banana",
+    "aspect_ratio": "4:5",
+    "duration": null
+  },
+  {
+    "name": "Weekend Offer Reel",
+    "category": "Ads",
+    "prompt": "A short, energetic commercial for {product}: open on an inviting close-up, reveal a bright weekend setting, and finish on a memorable product hero. Audience: {audience}. Keep the composition uncluttered and avoid legible lettering.",
+    "model": "seedance-lite-t2v",
+    "aspect_ratio": "9:16",
+    "duration": 5
+  },
+  {
+    "name": "Seasonal Brand Story",
+    "category": "Social Posts",
+    "prompt": "Create a warm seasonal campaign visual for {brand}, featuring {product} in a setting inspired by {season}. Use a refined palette, natural light, and editorial composition for {audience}; leave breathing room and avoid readable text.",
+    "model": "nano-banana",
+    "aspect_ratio": "4:5",
+    "duration": null
+  },
+  {
+    "name": "Unboxing Moment",
+    "category": "Social Posts",
+    "prompt": "A vertical creator-style video showing an authentic first look at {product}. Reveal the packaging, tactile details, and one satisfying use moment in a bright, relaxed space. Mood: {mood}. Keep the product recognizable and use no captions or logos beyond the supplied design.",
+    "model": "seedance-lite-t2v",
+    "aspect_ratio": "9:16",
+    "duration": 5
+  },
+  {
+    "name": "Minimal Product Portrait",
+    "category": "Product Shots",
+    "prompt": "Photograph {product} as a premium studio product portrait on a {background}. Use soft directional lighting, crisp material detail, subtle grounded shadows, and a carefully balanced composition for {brand}. No extra objects or readable text.",
+    "model": "nano-banana",
+    "aspect_ratio": "1:1",
+    "duration": null
+  },
+  {
+    "name": "Material Detail Loop",
+    "category": "Product Shots",
+    "prompt": "A smooth product-film shot of {product}, slowly rotating to reveal its {material_detail}. Use controlled studio reflections, a clean {background}, and a premium catalog finish. Keep the camera movement gentle and the item centered.",
+    "model": "seedance-lite-t2v",
+    "aspect_ratio": "1:1",
+    "duration": 5
+  },
+  {
+    "name": "Everyday Use Scene",
+    "category": "Product Shots",
+    "prompt": "Show {product} being used naturally in a {location} by {audience}. Capture a candid, practical moment with believable proportions, soft daylight, and a modern lifestyle-photo feel. Keep the product visible and the scene free of legible text.",
+    "model": "nano-banana",
+    "aspect_ratio": "3:2",
+    "duration": null
+  },
+  {
+    "name": "Creator Desk Setup",
+    "category": "Social Posts",
+    "prompt": "Create a vertical social post featuring {product} in a creator's workspace. Include a few purposeful desk objects, a lived-in but tidy feel, and {visual_style} lighting. Frame it for a quick mobile scroll with clear product visibility and no readable text.",
+    "model": "nano-banana",
+    "aspect_ratio": "9:16",
+    "duration": null
+  },
+  {
+    "name": "Flavor in Motion",
+    "category": "Ads",
+    "prompt": "A lively short food commercial for {product}: fresh ingredients move into frame, the finished serving is revealed, and the camera settles on an appetizing hero shot. Style: {visual_style}. Use rich natural color and no readable labels.",
+    "model": "seedance-lite-t2v",
+    "aspect_ratio": "16:9",
+    "duration": 5
+  },
+  {
+    "name": "Beauty Routine Close-Up",
+    "category": "Product Shots",
+    "prompt": "Create an elegant beauty campaign portrait for {product}, showing a calm everyday routine in a softly lit {location}. Emphasize natural skin texture, accurate packaging, and a fresh palette suited to {audience}. Avoid text overlays.",
+    "model": "nano-banana",
+    "aspect_ratio": "4:5",
+    "duration": null
+  },
+  {
+    "name": "Small Business Spotlight",
+    "category": "Social Posts",
+    "prompt": "A human, welcoming social campaign for {brand}, centered on {product} and the people who make it. Set it in {location}, with documentary-inspired light, a candid moment, and room for a future caption. No readable text in the image.",
+    "model": "nano-banana",
+    "aspect_ratio": "1:1",
+    "duration": null
+  },
+  {
+    "name": "Before the Reveal",
+    "category": "Ads",
+    "prompt": "Create a concise vertical teaser video for {product}. Begin with a close detail, use a smooth camera move to reveal the full item in a {background}, then hold a clean final hero frame. Mood: {mood}. Keep details faithful and avoid generated text.",
+    "model": "seedance-lite-t2v",
+    "aspect_ratio": "9:16",
+    "duration": 5
+  }
+]

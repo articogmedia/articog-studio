@@ -322,6 +322,8 @@ export default function MarketingStudio({
   onGenerationStart,
   onGenerationEnd,
   onGenerationComplete,
+  onHistoryRecord,
+  historyPrefill,
   onGenerationError,
   historyItems,
   locale = "en",
@@ -345,6 +347,23 @@ export default function MarketingStudio({
     res: "1080p",
     duration: 5
   });
+
+  useEffect(() => {
+    if (!historyPrefill || historyPrefill.input?.studio !== "marketing") return;
+    if (typeof historyPrefill.prompt === "string") setPrompt(historyPrefill.prompt);
+    const input = historyPrefill.input || {};
+    setParams((current) => ({
+      ...current,
+      ...(input.aspect_ratio ? { ratio: input.aspect_ratio } : {}),
+      ...(input.duration ? { duration: input.duration } : {}),
+      ...(input.resolution ? { res: input.resolution } : {}),
+      ...(input.format ? { format: input.format } : {}),
+      ...(typeof input.video_url === "string" ? { videoUrl: input.video_url } : {}),
+    }));
+    if (typeof input.product_image === "string") setProductImage(input.product_image);
+    if (typeof input.avatar_image === "string") setAvatarImage(input.avatar_image);
+    if (Array.isArray(input.additional_images)) setAdditionalImages(input.additional_images);
+  }, [historyPrefill]);
 
   const [localHistory, setLocalHistory] = useState([]);
   const history = historyItems ?? localHistory;
@@ -453,6 +472,23 @@ export default function MarketingStudio({
           setLocalHistory(prev => [entry, ...prev]);
         }
         setFullscreenUrl(result.url);
+        onHistoryRecord?.({
+          model: result.model || "marketing-studio",
+          type: "video",
+          prompt,
+          input: {
+            studio: "marketing",
+            aspect_ratio: params.ratio,
+            duration: params.duration,
+            resolution: params.res,
+            format: params.format,
+            product_image: productImage,
+            avatar_image: avatarImage,
+            additional_images: additionalImages,
+            video_url: params.videoUrl,
+          },
+          outputs: [result.url],
+        });
         onGenerationComplete?.({ url: result.url, type: "video" });
       }
     } catch (err) {

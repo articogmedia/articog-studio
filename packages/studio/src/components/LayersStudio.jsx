@@ -86,6 +86,8 @@ export default function LayersStudio({
   onGenerationStart,
   onGenerationEnd,
   onGenerationComplete,
+  onHistoryRecord,
+  historyPrefill,
   onGenerationError,
   locale = "en",
 }) {
@@ -97,10 +99,40 @@ export default function LayersStudio({
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  useEffect(() => {
+    if (!historyPrefill || historyPrefill.input?.studio !== "layers") return;
+    if (typeof historyPrefill.prompt === "string") setPrompt(historyPrefill.prompt);
+    const input = historyPrefill.input || {};
+    if (typeof input.image_url === "string") setCurrentImageUrl(input.image_url);
+    if (input.resolution) setResolution(input.resolution);
+    if (Number.isInteger(input.layer_count)) setLayerCount(input.layer_count);
+    if (typeof input.output_format === "string") setOutputFormat(input.output_format);
+  }, [historyPrefill]);
+
   // Layer Decomposition Sidebar Settings
   const [resolution, setResolution] = useState("1K"); // '1K' | '1.5K' | '2K'
   const [layerCount, setLayerCount] = useState(8);
   const [outputFormat, setOutputFormat] = useState("png");
+
+  const recordImageHistory = useCallback((result, operation, outputUrls) => {
+    const outputs = (Array.isArray(outputUrls) ? outputUrls : [outputUrls])
+      .filter((url) => typeof url === "string" && url);
+    if (!outputs.length) return;
+    onHistoryRecord?.({
+      model: result?.model || operation,
+      type: "image",
+      prompt,
+      input: {
+        studio: "layers",
+        operation,
+        image_url: currentImageUrl,
+        resolution,
+        layer_count: layerCount,
+        output_format: outputFormat,
+      },
+      outputs,
+    });
+  }, [currentImageUrl, layerCount, onHistoryRecord, outputFormat, prompt, resolution]);
 
   // Upscale Clean Panel State
   const [upscaleModel, setUpscaleModel] = useState("topaz-image-upscale");
@@ -775,6 +807,7 @@ export default function LayersStudio({
         toast.success(
           `Generated ${layerUrls.length} layer(s) with Seedream 5 Pro!`,
         );
+        recordImageHistory(result, "layer-decomposition", layerUrls);
         onGenerationComplete?.(result);
       }
     } catch (err) {
@@ -868,6 +901,7 @@ export default function LayersStudio({
       setVisibleLayers(initialVis);
 
       toast.success(copy.toasts.decomposedInto.replace('{count}', layerUrls.length));
+      recordImageHistory(result, "layer-decomposition", layerUrls);
       onGenerationComplete?.(result);
     } catch (err) {
       const errorMsg = formatErrorMessage(err);
@@ -924,6 +958,7 @@ export default function LayersStudio({
         toast.success(
           copy.toasts.upscaleSuccess.replace('{model}', selectedModelObj?.name || "AI Upscaler"),
         );
+        recordImageHistory(result, upscaleModel, outputUrl);
         onGenerationComplete?.(result);
       } else {
         toast.error(copy.toasts.upscaleNoOutput);
@@ -980,6 +1015,7 @@ export default function LayersStudio({
         ]);
         setCarouselIndex(0);
         toast.success(copy.toasts.removeBgSuccess);
+        recordImageHistory(result, "remove-background", outputUrl);
         onGenerationComplete?.(result);
       } else {
         toast.error(copy.toasts.removeBgNoOutput);
@@ -1031,6 +1067,7 @@ export default function LayersStudio({
       if (outputUrl) {
         setCurrentImageUrl(outputUrl);
         toast.success(copy.toasts.expandSuccess);
+        recordImageHistory(result, "expand-image", outputUrl);
         onGenerationComplete?.(result);
       } else {
         toast.error(copy.toasts.expandNoOutput);
@@ -1220,6 +1257,7 @@ export default function LayersStudio({
       if (result?.url) {
         setCurrentImageUrl(result.url);
         toast.success(copy.toasts.toolCompleted.replace('{tool}', toolId));
+        recordImageHistory(result, toolId, result.url);
         onGenerationComplete?.(result);
       }
     } catch (err) {

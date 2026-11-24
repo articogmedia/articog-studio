@@ -483,6 +483,8 @@ export default function RecastStudio({
   onGenerationStart,
   onGenerationEnd,
   onGenerationComplete,
+  onHistoryRecord,
+  historyPrefill,
   onGenerationError,
   historyItems,
   droppedFiles,
@@ -516,6 +518,18 @@ export default function RecastStudio({
 
   // ── Prompt ────────────────────────────────────────────────────────────────
   const [prompt, setPrompt] = useState("");
+
+  useEffect(() => {
+    if (!historyPrefill || historyPrefill.input?.studio !== "body-swap") return;
+    if (typeof historyPrefill.prompt === "string") setPrompt(historyPrefill.prompt);
+    const input = historyPrefill.input || {};
+    if (typeof input.video_url === "string") setVideoUrl(input.video_url);
+    if (typeof input.image_url === "string") setImageUrl(input.image_url);
+    if (typeof input.aspect_ratio === "string") setSelectedAspectRatio(input.aspect_ratio);
+    if (typeof historyPrefill.model === "string") setSelectedModelId(historyPrefill.model);
+    if (typeof input.video_url === "string") setVideoState(UPLOAD_STATE.READY);
+    if (typeof input.image_url === "string") setImageState(UPLOAD_STATE.READY);
+  }, [historyPrefill]);
 
   // ── Character Orientation ─────────────────────────────────────────────────
   const [characterOrientation, setCharacterOrientation] = useState("image");
@@ -832,6 +846,18 @@ export default function RecastStudio({
         return [{ url, name, timestamp: new Date().toISOString() }, ...prev].slice(0, 30);
       });
 
+      onHistoryRecord?.({
+        model: selectedModelId,
+        type: "video",
+        prompt,
+        input: {
+          studio: "body-swap",
+          video_url: videoUrl,
+          image_url: imageUrl,
+          aspect_ratio: selectedAspectRatio,
+        },
+        outputs: [res.url],
+      });
       if (onGenerationComplete) {
         onGenerationComplete({
           url: res.url,

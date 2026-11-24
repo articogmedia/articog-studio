@@ -375,6 +375,8 @@ export default function LipSyncStudio({
   onGenerationStart,
   onGenerationEnd,
   onGenerationComplete,
+  onHistoryRecord,
+  historyPrefill,
   onGenerationError,
   historyItems,
   droppedFiles,
@@ -420,6 +422,21 @@ export default function LipSyncStudio({
 
   // ── Prompt ──────────────────────────────────────────────────────────────
   const [prompt, setPrompt] = useState("");
+
+  useEffect(() => {
+    if (!historyPrefill || historyPrefill.input?.studio !== "lipsync") return;
+    if (typeof historyPrefill.prompt === "string") setPrompt(historyPrefill.prompt);
+    const input = historyPrefill.input || {};
+    if (input.inputMode === "image" || input.inputMode === "video") setInputMode(input.inputMode);
+    if (typeof historyPrefill.model === "string") setSelectedModelId(historyPrefill.model);
+    if (input.resolution) setSelectedResolution(input.resolution);
+    if (typeof input.image_url === "string") setImageUrl(input.image_url);
+    if (typeof input.video_url === "string") setVideoUrl(input.video_url);
+    if (typeof input.audio_url === "string") setAudioUrl(input.audio_url);
+    if (typeof input.image_url === "string") setImageState(UPLOAD_STATE.READY);
+    if (typeof input.video_url === "string") setVideoState(UPLOAD_STATE.READY);
+    if (typeof input.audio_url === "string") setAudioState(UPLOAD_STATE.READY);
+  }, [historyPrefill]);
 
   // ── Generation / UI state ───────────────────────────────────────────────
   const [isGenerating, setIsGenerating] = useState(false);
@@ -747,6 +764,20 @@ export default function LipSyncStudio({
       setActiveHistoryIdx(0);
       setView("result");
 
+      onHistoryRecord?.({
+        model: selectedModelId,
+        type: "video",
+        prompt,
+        input: {
+          studio: "lipsync",
+          image_url: imageUrl,
+          video_url: videoUrl,
+          audio_url: audioUrl,
+          inputMode,
+          resolution: selectedResolution,
+        },
+        outputs: [res.url],
+      });
       if (onGenerationComplete) {
         onGenerationComplete({
           url: res.url,

@@ -76,6 +76,8 @@ export default function VibeMotionStudio({
   onGenerationStart,
   onGenerationEnd,
   onGenerationComplete,
+  onHistoryRecord,
+  historyPrefill,
   onGenerationError,
   locale = "en",
 }) {
@@ -90,6 +92,18 @@ export default function VibeMotionStudio({
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState("16:9");
   const [duration, setDuration] = useState(6);
+
+  useEffect(() => {
+    if (!historyPrefill || historyPrefill.input?.studio !== "vibe-motion") return;
+    if (typeof historyPrefill.prompt === "string") setPrompt(historyPrefill.prompt);
+    const input = historyPrefill.input || {};
+    if (typeof input.aspect_ratio === "string") setAspectRatio(input.aspect_ratio);
+    if (input.duration !== undefined) setDuration(input.duration);
+    if (input.editSourceId) {
+      setEditMode(true);
+      setEditSourceId(input.editSourceId);
+    }
+  }, [historyPrefill]);
 
   // ── Edit mode ─────────────────────────────────────────────────────────────
   const [editMode, setEditMode] = useState(false);
@@ -196,6 +210,19 @@ export default function VibeMotionStudio({
 
       const next = [entry, ...history].slice(0, 30);
       saveHistory(next);
+      onHistoryRecord?.({
+        model: "vibe-motion",
+        type: "video",
+        prompt: prompt.trim(),
+        input: {
+          studio: "vibe-motion",
+          aspect_ratio: aspectRatio,
+          duration,
+          editMode,
+          editSourceId: editMode ? editSourceId : null,
+        },
+        outputs: videoUrl ? [videoUrl] : [],
+      });
       onGenerationComplete?.({ url: videoUrl, type: "video" });
     } catch (err) {
       // Detect the backend's "animation code not saved" limitation
@@ -233,6 +260,7 @@ export default function VibeMotionStudio({
     history,
     saveHistory,
     onGenerationComplete,
+    onHistoryRecord,
     onGenerationEnd,
     onGenerationError,
     onGenerationStart,
