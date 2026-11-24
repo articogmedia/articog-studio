@@ -12,6 +12,7 @@ function outputList(item) {
 }
 
 export default function Gallery({
+  embedded = false,
   onRerun,
   selectedProjectId = "",
   onSelectedProjectChange,
@@ -131,7 +132,7 @@ export default function Gallery({
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <section className="mx-auto w-full max-w-[1400px] px-6 md:px-8 py-8 h-full overflow-y-auto text-white">
+    <section className={embedded ? "h-full w-full overflow-y-auto text-white" : "mx-auto w-full max-w-[1400px] px-6 md:px-8 py-8 h-full overflow-y-auto text-white"}>
       <header className="mb-6 flex min-w-0 items-center justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-white/40">Your creations</p>

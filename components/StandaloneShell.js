@@ -1219,44 +1219,51 @@ export default function StandaloneShell({ locale = 'en' }) {
           <CinemaStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'cinema' ? libraryAction : null} historyPrefill={historyPrefill} onHistoryRecord={makeHistoryRecordCallback('cinema')} onGenerationStart={makeGenerationStartCallback('cinema')} onGenerationEnd={makeGenerationEndCallback('cinema')} onGenerationComplete={makeSuccessCallback('cinema')} onGenerationError={makeErrorCallback('cinema')} />
         </div>
         </StudioBalanceContext.Provider>
-        <div className={isLibraryTab ? "flex h-full w-full flex-col" : "hidden"}>
-          <div className="mx-auto flex w-full max-w-[1400px] shrink-0 items-center gap-2 pb-4">
-            <div role="tablist" aria-label="Library views" className="flex items-center gap-2">
+        <div className={isLibraryTab ? "mx-auto w-full max-w-[1400px] px-6 md:px-8 py-8 flex h-full min-h-0 flex-col" : "hidden"}>
+          <h1 className="mb-3 text-2xl font-semibold text-white">{copy.libraryPage.title}</h1>
+          <div role="tablist" aria-label={copy.libraryPage.title} className="flex shrink-0 items-center gap-2">
               <button
+                id="library-device-tab"
                 type="button"
                 role="tab"
                 aria-selected={activeTab === 'library'}
                 aria-controls="library-device-panel"
                 onClick={() => handleTabChange('library')}
-                className={`${HEADER_CONTROL_CLASS} transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+                className={`h-9 !min-h-0 whitespace-nowrap rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
                   activeTab === 'library'
-                    ? 'border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)]'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-raised)] hover:text-[var(--text-primary)]'
+                    ? '!border-white/20 !bg-white/10 !text-white'
+                    : 'text-white/60 hover:bg-white/[0.05] hover:text-white'
                 }`}
               >
-                This device
+                {copy.libraryPage.savedOnThisDevice}
               </button>
               <button
+                id="library-cloud-tab"
                 type="button"
                 role="tab"
                 aria-selected={activeTab === 'gallery'}
                 aria-controls="library-cloud-panel"
                 onClick={() => handleTabChange('gallery')}
-                className={`${HEADER_CONTROL_CLASS} transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+                className={`h-9 !min-h-0 whitespace-nowrap rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
                   activeTab === 'gallery'
-                    ? 'border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)]'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-raised)] hover:text-[var(--text-primary)]'
+                    ? '!border-white/20 !bg-white/10 !text-white'
+                    : 'text-white/60 hover:bg-white/[0.05] hover:text-white'
                 }`}
               >
-                Cloud history
+                {copy.libraryPage.myAccountHistory}
               </button>
-            </div>
           </div>
-          <div id="library-device-panel" role="tabpanel" className={activeTab === 'library' ? "min-h-0 flex-1" : "hidden"}>
-            <AssetsLibrary apiKey={apiKey} locale={locale} copy={copy.assetsLibrary} referenceAvailability={libraryAvailability} onAssetAction={handleLibraryAssetAction} onProjectsChange={setLibraryProjects} />
+          <p className="mt-3 mb-5 shrink-0 text-sm text-white/50">
+            {activeTab === 'library'
+              ? copy.libraryPage.deviceHelper
+              : copy.libraryPage.accountHelper}
+          </p>
+          <div id="library-device-panel" role="tabpanel" aria-labelledby="library-device-tab" className={activeTab === 'library' ? "min-h-0 flex-1" : "hidden"}>
+            <AssetsLibrary apiKey={apiKey} locale={locale} copy={copy.assetsLibrary} referenceAvailability={libraryAvailability} onAssetAction={handleLibraryAssetAction} onProjectsChange={setLibraryProjects} embedded />
           </div>
-          <div id="library-cloud-panel" role="tabpanel" className={activeTab === 'gallery' ? "min-h-0 flex-1" : "hidden"}>
+          <div id="library-cloud-panel" role="tabpanel" aria-labelledby="library-cloud-tab" className={activeTab === 'gallery' ? "min-h-0 flex-1" : "hidden"}>
             <Gallery
+              embedded
               onRerun={applyStudioPrefill}
               selectedProjectId={selectedHistoryProjectId}
               onSelectedProjectChange={setSelectedHistoryProjectId}

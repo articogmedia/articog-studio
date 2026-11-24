@@ -55,6 +55,13 @@
     "dismissNotification": "Dismiss notification",
     "ariaLabel": "Generation activity and notifications"
   },
+  "libraryPage": {
+    "title": "Library",
+    "savedOnThisDevice": "Saved on this device",
+    "myAccountHistory": "My account history",
+    "deviceHelper": "Stored in this browser only. Clear your browser data and these are gone.",
+    "accountHelper": "Sign in to see your creations on any device."
+  },
   "assetsLibrary": {
     "title": "Assets library",
     "subtitle": "Your generated images and videos, organised by project.",

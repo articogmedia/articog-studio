@@ -34,6 +34,7 @@ function getAssetFormat(asset) {
 }
 
 export default function AssetsLibrary({
+  embedded = false,
   apiKey,
   locale = "en",
   copy = commonEn.assetsLibrary,
@@ -409,8 +410,8 @@ export default function AssetsLibrary({
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-app-bg p-0 text-white">
-      <div className="mx-auto w-full max-w-[1400px] px-6 md:px-8 py-8 flex min-h-0 flex-1 flex-col">
-      <div className="mb-5 flex min-w-0 items-center justify-between gap-4 border-b border-white/10 py-5">
+      <div className={embedded ? "flex min-h-0 flex-1 flex-col" : "mx-auto w-full max-w-[1400px] px-6 md:px-8 py-8 flex min-h-0 flex-1 flex-col"}>
+      {!embedded && <div className="mb-5 flex min-w-0 items-center justify-between gap-4 border-b border-white/10 py-5">
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-semibold tracking-tight text-white md:text-3xl">{copy.title}</h1>
           <p className="mt-1 truncate text-sm text-white/55">{copy.subtitle}</p>
@@ -437,7 +438,7 @@ export default function AssetsLibrary({
             </button>
           ))}
         </div>
-      </div>
+      </div>}
 
       {loadError && (
         <p role="alert" className="mb-3 text-sm text-red-300">{loadError}</p>

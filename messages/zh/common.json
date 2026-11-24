@@ -55,6 +55,13 @@
     "dismissNotification": "关闭通知",
     "ariaLabel": "生成活动与通知"
   },
+  "libraryPage": {
+    "title": "资料库",
+    "savedOnThisDevice": "保存在此设备上",
+    "myAccountHistory": "我的账户历史记录",
+    "deviceHelper": "仅存储在此浏览器中。清除浏览器数据后，这些内容将会丢失。",
+    "accountHelper": "登录后即可在任何设备上查看您的创作。"
+  },
   "assetsLibrary": {
     "title": "素材库",
     "subtitle": "您生成的图像和视频，按项目整理。",
