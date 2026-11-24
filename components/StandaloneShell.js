@@ -308,6 +308,7 @@ const getNavigationCategory = (tabId) => (
 const STORAGE_KEY = 'muapi_key';
 const NOTIFICATIONS_STORAGE_KEY = 'open_gen_notifications_v1';
 const MAX_VISIBLE_NOTIFICATIONS = 3;
+const HEADER_CONTROL_CLASS = 'h-9 !min-h-0 px-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-sm whitespace-nowrap';
 
 const loadStoredNotifications = () => {
   if (typeof window === 'undefined') return [];
@@ -870,13 +871,13 @@ export default function StandaloneShell({ locale = 'en' }) {
 
       {/* Header */}
       {isHeaderVisible && (
-        <header className="flex-shrink-0 h-14 border-b border-[var(--border-subtle)] flex items-center justify-between px-2 sm:px-4 bg-[var(--bg-base)]/90 backdrop-blur-md z-50 gap-2 sm:gap-4">
+        <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 h-14 px-4 md:px-6 border-b border-white/10 bg-[#0a0a0a] flex-shrink-0 z-50 max-lg:grid-cols-[auto_minmax(0,1fr)] max-lg:gap-2">
           {/* Left: Mobile menu toggle + Logo + Desktop Sidebar Toggle */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex min-w-0 items-center gap-3 justify-self-start">
             {/* Mobile drawer toggle */}
             <button
               onClick={() => setIsMobileOpen(!isMobileOpen)}
-              className={`md:hidden ${UI.buttonIcon}`}
+              className={`md:hidden ${UI.buttonSecondary} ${HEADER_CONTROL_CLASS}`}
               aria-label={copy.shell.toggleNavMenu}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -890,7 +891,7 @@ export default function StandaloneShell({ locale = 'en' }) {
             <div className="hidden md:block relative group">
               <button
                 onClick={toggleSidebar}
-                className={UI.buttonIcon}
+                className={`${UI.buttonSecondary} ${HEADER_CONTROL_CLASS}`}
                 aria-label={isSidebarCollapsed ? copy.shell.expandSidebar : copy.shell.collapseSidebar}
               >
                 <svg
@@ -915,88 +916,102 @@ export default function StandaloneShell({ locale = 'en' }) {
 
             {/* Logo & Title */}
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full overflow-hidden ring-1 ring-white/25 bg-black shrink-0">
+              <div className="h-9 w-9 rounded-full overflow-hidden ring-1 ring-white/25 bg-black shrink-0">
                 <img src="/articog-logo.png" alt="Articog" className="w-full h-full object-cover scale-[1.15]" />
               </div>
-              <span className="text-sm font-bold tracking-tight hidden sm:block text-white">
+              <span className="hidden truncate text-sm font-bold tracking-tight text-white sm:block">
                 {copy.shell.brand}
               </span>
             </div>
           </div>
 
           {/* Active Tab Breadcrumb Badge */}
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.05] text-xs text-white/60">
+          <div className={`hidden lg:flex min-w-0 max-w-64 items-center gap-2 justify-self-center ${HEADER_CONTROL_CLASS} text-[var(--text-secondary)]`}>
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]" />
-            <span className="font-medium text-white/80">
-              {tabLabel(activeTab) || copy.shell.studioFallback}
+            <span className="truncate font-medium text-[var(--text-primary)]">
+              {activeTab === 'library' ? 'Library' : tabLabel(activeTab) || copy.shell.studioFallback}
             </span>
           </div>
 
           {/* Right: Actions */}
-          <div className="flex-shrink-0 flex items-center gap-1 sm:gap-3">
-            <button type="button" onClick={() => setIsTemplatePickerOpen(true)} className={`${UI.buttonSecondary} max-sm:px-1.5 px-2.5`}>
-              <span className="sm:hidden">Templates</span>
-              <span className="hidden sm:inline">Templates</span>
+          <div className="flex min-w-0 flex-nowrap items-center justify-self-end gap-2 max-sm:gap-1">
+            <button type="button" onClick={() => setIsTemplatePickerOpen(true)} aria-label="Templates" title="Templates" className={`${UI.buttonSecondary} ${HEADER_CONTROL_CLASS} shrink-0`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 5h16M4 12h16M4 19h16" />
+                <path d="M8 3v4M16 10v4M10 17v4" />
+              </svg>
+              <span className="hidden xl:inline">Templates</span>
             </button>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <select
-                aria-label="Generation project"
-                value={selectedProjectId}
-                onChange={(event) => setSelectedProjectId(event.target.value)}
-                className={`max-sm:w-20 max-sm:min-w-0 max-w-28 sm:max-w-36 ${UI.select} px-2 sm:px-2.5`}
+            <details className="group relative min-w-0">
+              <summary
+                aria-label="Generation and history projects"
+                title={libraryProjects.find((project) => project.id === selectedProjectId)?.name || 'Untitled'}
+                className={`${UI.buttonSecondary} ${HEADER_CONTROL_CLASS} flex w-10 max-w-[140px] min-w-0 cursor-pointer list-none items-center gap-1 overflow-hidden sm:w-32 lg:w-44 [&::-webkit-details-marker]:hidden`}
               >
-                {libraryProjects.map((project) => (
-                  <option key={project.id} value={project.id} className="bg-[#111]">
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={handleCreateProject}
-                className={`${UI.buttonSecondary} max-sm:px-1.5 px-2.5`}
-              >
-                <span className="sm:hidden">New</span>
-                <span className="hidden sm:inline">New project</span>
-              </button>
-            </div>
-            <div className="flex items-center gap-1">
-              <select
-                aria-label="Gallery project"
-                value={selectedHistoryProjectId}
-                onChange={(event) => setSelectedHistoryProjectId(event.target.value)}
-                className={`max-sm:w-20 max-sm:min-w-0 max-w-28 sm:max-w-36 ${UI.select} px-2 sm:px-2.5`}
-              >
-                <option value="">All history</option>
-                {historyProjects.map((project) => (
-                  <option key={project.id} value={project.id} className="bg-[#111]">{project.name}</option>
-                ))}
-              </select>
-              <button type="button" onClick={handleCreateHistoryProject} className={`${UI.buttonSecondary} max-sm:px-1.5 px-2.5`}>
-                <span className="sm:hidden">New</span>
-                <span className="hidden sm:inline">New history project</span>
-              </button>
-            </div>
-            <div className="flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 py-1.5 transition-colors sm:gap-2.5 sm:px-3">
+                <span className="min-w-0 flex-1 truncate text-left">
+                  {libraryProjects.find((project) => project.id === selectedProjectId)?.name || 'Untitled'}
+                </span>
+                <svg className="shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </summary>
+              <div className="absolute right-0 top-full z-[70] mt-2 w-72 max-w-[calc(100vw-2rem)] space-y-3 rounded-card border border-[var(--border-subtle)] bg-[var(--bg-raised)] p-3 shadow-xl">
+                <section className="space-y-2">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Generation project</h2>
+                  <select
+                    aria-label="Generation project"
+                    value={selectedProjectId}
+                    onChange={(event) => setSelectedProjectId(event.target.value)}
+                    className={`${UI.select} ${HEADER_CONTROL_CLASS} w-full min-w-0 truncate`}
+                  >
+                    {libraryProjects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={handleCreateProject} className={`${UI.buttonSecondary} ${HEADER_CONTROL_CLASS} w-full justify-start`}>
+                    + New project
+                  </button>
+                </section>
+                <section className="space-y-2 border-t border-[var(--border-subtle)] pt-3">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">History project filter</h2>
+                  <select
+                    aria-label="Gallery project"
+                    value={selectedHistoryProjectId}
+                    onChange={(event) => setSelectedHistoryProjectId(event.target.value)}
+                    className={`${UI.select} ${HEADER_CONTROL_CLASS} w-full min-w-0 truncate`}
+                  >
+                    <option value="">All history</option>
+                    {historyProjects.map((project) => (
+                      <option key={project.id} value={project.id}>{project.name}</option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={handleCreateHistoryProject} className={`${UI.buttonSecondary} ${HEADER_CONTROL_CLASS} w-full justify-start`}>
+                    + New history project
+                  </button>
+                </section>
+              </div>
+            </details>
+            <div className={`flex shrink-0 items-center gap-2 ${HEADER_CONTROL_CLASS}`}>
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs font-medium text-[var(--text-secondary)] sm:text-sm">
+              <span className="text-sm font-medium text-[var(--text-secondary)] max-sm:hidden">
                 {copy.shell.creditsLabel}
               </span>
-              <span className={`text-xs font-semibold sm:text-sm ${balance !== null ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>
+              <span className={`text-sm font-semibold ${balance !== null ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>
                 {balance !== null ? `${balance}` : '—'}
               </span>
             </div>
 
             <button
               onClick={() => setShowSettings(true)}
-              className={UI.buttonSecondary}
+              className={`${UI.buttonSecondary} ${HEADER_CONTROL_CLASS} shrink-0`}
               aria-label={copy.shell.settings}
+              title={copy.shell.settings}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
-              <span className="hidden sm:inline">{copy.shell.settings}</span>
+              <span className="hidden xl:inline">{copy.shell.settings}</span>
             </button>
           </div>
         </header>
@@ -1175,7 +1190,9 @@ export default function StandaloneShell({ locale = 'en' }) {
                   <span className={`flex-shrink-0 [&_svg]:h-5 [&_svg]:w-5 ${activeTab === 'library' ? 'text-white' : 'text-[var(--text-secondary)] group-hover:text-white'}`}>
                     {TABS.find((tab) => tab.id === 'library')?.icon}
                   </span>
-                  {(!isSidebarCollapsed || isMobileOpen) && <span className="truncate">Library</span>}
+                  {(!isSidebarCollapsed || isMobileOpen) && (
+                    <span className="truncate text-xs font-semibold uppercase leading-4 tracking-wide">Library</span>
+                  )}
                 </a>
               </div>
             </nav>
@@ -1183,7 +1200,8 @@ export default function StandaloneShell({ locale = 'en' }) {
         )}
 
         {/* Studio Content */}
-        <div className="flex-1 min-h-0 h-full relative overflow-hidden bg-[var(--bg-base)] p-6">
+        <div className="flex-1 min-h-0 h-full min-w-0 relative overflow-hidden bg-[var(--bg-base)] px-6 py-6 md:px-8">
+        <div className="mx-auto h-full w-full max-w-[1600px]">
         <StudioBalanceContext.Provider value={balance}>
         <div className={activeTab === 'image' ? "h-full w-full" : "hidden"}>
           <ImageStudio apiKey={apiKey} locale={locale} selectedProjectId={selectedProjectId} assetAction={activeTab === 'image' ? libraryAction : null} onLibraryAvailability={handleImageLibraryAvailability} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} historyPrefill={historyPrefill} onHistoryRecord={makeHistoryRecordCallback('image')} onGenerationStart={makeGenerationStartCallback('image')} onGenerationEnd={makeGenerationEndCallback('image')} onGenerationComplete={makeSuccessCallback('image')} onGenerationError={makeErrorCallback('image')} />
@@ -1217,7 +1235,13 @@ export default function StandaloneShell({ locale = 'en' }) {
           <AssetsLibrary apiKey={apiKey} locale={locale} copy={copy.assetsLibrary} referenceAvailability={libraryAvailability} onAssetAction={handleLibraryAssetAction} onProjectsChange={setLibraryProjects} />
         </div>
         <div className={activeTab === 'gallery' ? "h-full w-full" : "hidden"}>
-          <Gallery onRerun={applyStudioPrefill} selectedProjectId={selectedHistoryProjectId} />
+          <Gallery
+            onRerun={applyStudioPrefill}
+            selectedProjectId={selectedHistoryProjectId}
+            onSelectedProjectChange={setSelectedHistoryProjectId}
+            projects={historyProjects}
+            onCreateProject={handleCreateHistoryProject}
+          />
         </div>
         <div className={activeTab === 'audio' ? "h-full w-full" : "hidden"}>
           <AudioStudio apiKey={apiKey} locale={locale} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} onGenerationStart={makeGenerationStartCallback('audio')} onGenerationEnd={makeGenerationEndCallback('audio')} onGenerationComplete={makeSuccessCallback('audio')} onGenerationError={makeErrorCallback('audio')} />
@@ -1272,6 +1296,7 @@ export default function StandaloneShell({ locale = 'en' }) {
           onClose={() => setIsTemplatePickerOpen(false)}
           onApply={handleTemplateApply}
         />
+        </div>
       </div>
     </div>
 

@@ -11,7 +11,13 @@ function outputList(item) {
   return typeof item.outputs === "string" ? [item.outputs] : [];
 }
 
-export default function Gallery({ onRerun, selectedProjectId = "" }) {
+export default function Gallery({
+  onRerun,
+  selectedProjectId = "",
+  onSelectedProjectChange,
+  projects: projectOptions,
+  onCreateProject,
+}) {
   const [items, setItems] = useState([]);
   const [projects, setProjects] = useState([]);
   const [search, setSearch] = useState("");
@@ -53,8 +59,14 @@ export default function Gallery({ onRerun, selectedProjectId = "" }) {
   }, [favoritesOnly, model, page, projectId, search, type]);
 
   useEffect(() => { void load(); }, [load]);
-  useEffect(() => { setProjectId(selectedProjectId); }, [selectedProjectId]);
   useEffect(() => {
+    setProjectId(selectedProjectId);
+  }, [selectedProjectId]);
+  useEffect(() => {
+    if (projectOptions) setProjects(projectOptions);
+  }, [projectOptions]);
+  useEffect(() => {
+    if (projectOptions) return undefined;
     fetch("/api/projects", { credentials: "same-origin" })
       .then(async (response) => {
         if (response.status === 401) return [];
@@ -64,7 +76,8 @@ export default function Gallery({ onRerun, selectedProjectId = "" }) {
       })
       .then(setProjects)
       .catch((projectError) => setError(projectError.message));
-  }, []);
+    return undefined;
+  }, [projectOptions]);
 
   const updateItem = async (item, patch) => {
     try {
@@ -119,12 +132,21 @@ export default function Gallery({ onRerun, selectedProjectId = "" }) {
 
   return (
     <section className="h-full overflow-y-auto text-white">
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <header className="mb-6 flex min-w-0 items-center justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-white/40">Your creations</p>
           <h1 className="mt-1 text-2xl font-semibold">Gallery</h1>
         </div>
-        <span className="text-sm text-white/45">{total} items</span>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="hidden text-sm text-white/45 sm:inline">{total} items</span>
+          <button
+            type="button"
+            onClick={onCreateProject}
+            className="h-9 shrink-0 rounded-control border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--bg-raised)] hover:text-[var(--text-primary)]"
+          >
+            New project
+          </button>
+        </div>
       </header>
       <div className="mb-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         <input aria-label="Search prompts" placeholder="Search prompts…" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm outline-none focus:border-white/30" />
@@ -135,7 +157,7 @@ export default function Gallery({ onRerun, selectedProjectId = "" }) {
         <select aria-label="Filter by type" value={type} onChange={(event) => { setType(event.target.value); setPage(1); }} className="rounded-lg border border-white/10 bg-[#111318] px-3 py-2 text-sm">
           <option value="">Images and videos</option><option value="image">Images</option><option value="video">Videos</option>
         </select>
-        <select aria-label="Filter by project" value={projectId} onChange={(event) => { setProjectId(event.target.value); setPage(1); }} className="rounded-lg border border-white/10 bg-[#111318] px-3 py-2 text-sm">
+        <select aria-label="Filter by project" value={projectId} onChange={(event) => { setProjectId(event.target.value); onSelectedProjectChange?.(event.target.value); setPage(1); }} className="rounded-lg border border-white/10 bg-[#111318] px-3 py-2 text-sm">
           <option value="">All projects</option>
           {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
         </select>

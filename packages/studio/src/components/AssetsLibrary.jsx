@@ -408,8 +408,8 @@ export default function AssetsLibrary({
   };
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-hidden bg-app-bg p-4 text-white md:p-6">
-      <div className="-mx-4 -mt-4 mb-5 flex items-center justify-between gap-4 border-b border-white/10 px-6 py-5 md:-mx-6 md:-mt-6">
+    <div className="relative flex h-full w-full flex-col overflow-hidden bg-app-bg p-0 text-white">
+      <div className="mb-5 flex min-w-0 items-center justify-between gap-4 border-b border-white/10 py-5">
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-semibold tracking-tight text-white md:text-3xl">{copy.title}</h1>
           <p className="mt-1 truncate text-sm text-white/55">{copy.subtitle}</p>
