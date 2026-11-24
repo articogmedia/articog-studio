@@ -409,6 +409,7 @@ export default function AssetsLibrary({
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-app-bg p-0 text-white">
+      <div className="mx-auto w-full max-w-[1400px] px-6 md:px-8 py-8 flex min-h-0 flex-1 flex-col">
       <div className="mb-5 flex min-w-0 items-center justify-between gap-4 border-b border-white/10 py-5">
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-semibold tracking-tight text-white md:text-3xl">{copy.title}</h1>
@@ -597,6 +598,7 @@ export default function AssetsLibrary({
           )}
         </>
       )}
+      </div>
 
       {selectedAsset && (
         <div className="absolute inset-0 z-20 flex justify-end bg-black/70" onClick={() => setSelectedAsset(null)}>
